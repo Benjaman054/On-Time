@@ -6,7 +6,7 @@
 #
 # You can watch each run in your repo's "Actions" tab.
 # =============================================================================
-name: CI
+name: CI / CD
 
 # WHEN should this run?
 on:
@@ -70,3 +70,63 @@ jobs:
 
       - name: Make sure the app still bundles
         run: npx expo export --platform android --output-dir dist
+
+  # ---------------------------------------------------------------------------
+  # Job 3 — DEPLOY the backend to AWS
+  # Runs ONLY after both checks pass, and ONLY on a real push to main
+  # (never on Pull Requests). This is the "CD" part.
+  # ---------------------------------------------------------------------------
+  deploy-backend:
+    name: Deploy backend to AWS
+    needs: [backend, frontend] # wait for both checks to succeed first
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: traffic-serverless
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Set up Python (the SAM CLI is a Python tool)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the AWS SAM CLI
+        run: pip install aws-sam-cli
+
+      - name: Give the pipeline temporary AWS access (from your secrets)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Build the backend
+        run: sam build
+
+      - name: Deploy to AWS
+        # Secrets are put into environment variables first (safer than pasting
+        # them straight into the command), then passed to SAM as parameters.
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          sam deploy \
+            --stack-name traffic-check \
+            --region eu-central-1 \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              GoogleClientId="$GOOGLE_CLIENT_ID" \
+              GoogleClientSecret="$GOOGLE_CLIENT_SECRET" \
+              GoogleRedirectUri="https://hy76b43p4m.execute-api.eu-central-1.amazonaws.com/auth/google/callback" \
+              GoogleMapsApiKey="$GOOGLE_MAPS_API_KEY" \
+              SenderEmail="$SENDER_EMAIL" \
+              TelegramBotToken="$TELEGRAM_BOT_TOKEN"
