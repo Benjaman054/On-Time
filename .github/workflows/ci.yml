@@ -28,12 +28,12 @@ jobs:
         working-directory: traffic-serverless # run every step in this folder
     steps:
       - name: Check out the code
-        uses: actions/checkout@v4 # downloads your repo onto the machine
+        uses: actions/checkout@v5 # downloads your repo onto the machine
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 20 # matches your AWS Lambda runtime (nodejs20.x)
 
       - name: Install dependencies
         run: npm install # backend has no lock file, so use install
@@ -56,10 +56,10 @@ jobs:
         working-directory: traffic-expo
     steps:
       - name: Check out the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm # speeds up repeat runs by caching downloaded packages
