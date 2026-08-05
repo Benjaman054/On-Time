@@ -1,0 +1,280 @@
+# This one file describes your whole cloud backend. `sam deploy` reads it and
+# creates everything in AWS for you — no clicking around the console.
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Traffic Check backend (serverless)
+
+# -------------------------------------------------------------------------
+# Parameters = values you pass IN at deploy time, so secrets never live in
+# this file. You'll supply these on the `sam deploy` command line.
+# -------------------------------------------------------------------------
+Parameters:
+  GoogleClientId:
+    Type: String
+  GoogleClientSecret:
+    Type: String
+    NoEcho: true      # hides the value in the AWS console/logs
+  GoogleRedirectUri:
+    Type: String
+    Description: Must exactly match the redirect URI registered in Google Cloud
+  GoogleMapsApiKey:
+    Type: String
+    NoEcho: true
+  SenderEmail:
+    Type: String
+    Description: A verified SES email address the summaries are sent FROM
+  TelegramBotToken:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: Bot token from Telegram's @BotFather (for Telegram notifications)
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 10
+    MemorySize: 128
+
+Resources:
+
+  # ---- Database: one row per user (key = userId) ----
+  UserTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: userId
+        Type: String
+
+  # ---- Sanity-check endpoint ----
+  HelloFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/hello.handler
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /hello
+            Method: GET
+
+  # ---- Save / read preferences ----
+  SavePreferencesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/savePreferences.handler
+      Timeout: 60          # it recomputes plans (Maps calls) after saving
+      MemorySize: 256
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+          GOOGLE_MAPS_API_KEY: !Ref GoogleMapsApiKey
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /preferences
+            Method: POST
+
+  GetPreferencesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/getPreferences.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /preferences
+            Method: GET
+
+  # ---- Google OAuth: start the consent flow ----
+  AuthStartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/authStart.handler
+      Environment:
+        Variables:
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /auth/google/start
+            Method: GET
+
+  # ---- Test endpoint: read the calendar live (step 4a) ----
+  ReadCalendarFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/readCalendar.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /debug/calendar
+            Method: GET
+
+  # ---- Test endpoint: calendar + traffic + leave-by (step 4b) ----
+  PlanTrafficFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/planTraffic.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+          GOOGLE_MAPS_API_KEY: !Ref GoogleMapsApiKey
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /debug/plan
+            Method: GET
+
+  # ---- Google OAuth: receive the result, store the token ----
+  AuthCallbackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/authCallback.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /auth/google/callback
+            Method: GET
+
+  # ---- Create a meeting (adds it to Google Calendar) ----
+  CreateMeetingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/createMeeting.handler
+      Timeout: 60
+      MemorySize: 256
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+          GOOGLE_MAPS_API_KEY: !Ref GoogleMapsApiKey
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /meetings/create
+            Method: POST
+
+  # ---- Address autocomplete (proxies Google Places) ----
+  PlacesAutocompleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/placesAutocomplete.handler
+      Environment:
+        Variables:
+          GOOGLE_MAPS_API_KEY: !Ref GoogleMapsApiKey
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /places/autocomplete
+            Method: GET
+
+  # ---- Read stored meetings (what the app will call) ----
+  GetMeetingsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/getMeetings.handler
+      Timeout: 60          # ?refresh=true recomputes (Maps calls)
+      MemorySize: 256
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+          GOOGLE_MAPS_API_KEY: !Ref GoogleMapsApiKey
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /meetings
+            Method: GET
+
+  # ---- The scheduled worker (step 5): runs every 15 min ----
+  WorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/worker.handler
+      Timeout: 60          # more time: it makes several Maps calls per run
+      MemorySize: 256
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+          GOOGLE_MAPS_API_KEY: !Ref GoogleMapsApiKey
+          SENDER_EMAIL: !Ref SenderEmail
+          TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+          TIMEZONE: Asia/Jerusalem
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+        # Permission to send email through SES.
+        - Statement:
+            - Effect: Allow
+              Action: ses:SendEmail
+              Resource: "*"
+      Events:
+        # This is what makes it run on its own — no HTTP, just the clock.
+        Every15Min:
+          Type: Schedule
+          Properties:
+            Schedule: rate(15 minutes)
+
+Outputs:
+  ApiUrl:
+    Description: Base URL of the API
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"

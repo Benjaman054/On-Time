@@ -1,0 +1,4 @@
+node_modules/
+.aws-sam/
+# samconfig may hold secrets in parameter_overrides — keep it out of git
+samconfig.toml

@@ -1,0 +1,11 @@
+{
+  "name": "traffic-serverless",
+  "version": "1.0.0",
+  "description": "Traffic Check serverless backend",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.665.0",
+    "@aws-sdk/client-ses": "^3.665.0",
+    "@aws-sdk/lib-dynamodb": "^3.665.0",
+    "googleapis": "^144.0.0"
+  }
+}

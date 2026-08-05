@@ -1,0 +1,52 @@
+# =====================================================================
+# SECRETS — never commit these
+# =====================================================================
+# AWS access keys (downloaded from IAM). Should not even live in the repo.
+Benjamin_accessKeys.csv
+*accessKeys*.csv
+# SAM config holds Google/Maps/Telegram secrets in parameter_overrides
+**/samconfig.toml
+# Environment files (but keep the safe example templates)
+**/.env
+**/.env.*
+!**/.env.example
+# Keys / certificates / keystores
+*.pem
+*.p12
+*.keystore
+*.jks
+
+# =====================================================================
+# Dependencies & build output
+# =====================================================================
+**/node_modules/
+**/.aws-sam/
+**/.expo/
+**/dist/
+**/build/
+**/.gradle/
+**/web-build/
+
+# =====================================================================
+# Android
+# =====================================================================
+**/local.properties
+**/*.apk
+**/*.aab
+**/captures/
+
+# =====================================================================
+# Legacy / superseded projects (kept on disk, not tracked in the repo)
+# =====================================================================
+traffic-android/
+traffic-backend/
+
+# =====================================================================
+# IDE / editor / OS
+# =====================================================================
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+*.log
