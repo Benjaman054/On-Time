@@ -1,4 +1,5 @@
-const { UpdateCommand } = require("@aws-sdk/lib-dynamodb");
+const crypto = require("crypto");
+const { UpdateCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
 const { ddb, TABLE } = require("./lib/dynamo");
 const { createOAuthClient } = require("./lib/googleAuth");
 
@@ -53,6 +54,37 @@ exports.handler = async (event) => {
   );
 
   console.log(`Connected user ${userId} (${email})`);
+
+  // --- Issue a session token so the app can prove it's this user later ---
+  // It's just a long random string. We store two things:
+  //   session#<token> -> the user   (checked on every future request)
+  //   login#<code>    -> the token  (a short-lived mailbox the app polls)
+  const login = event.queryStringParameters?.state;
+  const sessionToken = crypto.randomBytes(24).toString("hex");
+
+  await ddb.send(
+    new PutCommand({
+      TableName: TABLE,
+      Item: {
+        userId: `session#${sessionToken}`,
+        ownerUserId: userId,
+        createdAt: new Date().toISOString(),
+      },
+    })
+  );
+
+  if (login) {
+    await ddb.send(
+      new PutCommand({
+        TableName: TABLE,
+        Item: {
+          userId: `login#${login}`,
+          sessionToken,
+          expiresAt: Date.now() + 5 * 60 * 1000, // app has 5 minutes to collect
+        },
+      })
+    );
+  }
 
   return page(
     "✅ You're connected!",

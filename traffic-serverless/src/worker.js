@@ -29,6 +29,8 @@ exports.handler = async (event = {}) => {
 
   let processed = 0;
   for (const user of Items) {
+    // Skip internal bookkeeping rows (session#… / login#…), not real users.
+    if (String(user.userId).includes("#")) continue;
     if (!user.googleRefreshToken || !user.homeAddress || user.paused) continue;
     // Skip only if the user wants NO notifications at all.
     const wantsEmail = user.notifyEmail !== false;

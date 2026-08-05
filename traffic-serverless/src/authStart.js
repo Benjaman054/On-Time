@@ -1,21 +1,20 @@
+const crypto = require("crypto");
 const { createOAuthClient, SCOPES } = require("./lib/googleAuth");
 
-// GET /auth/google/start?userId=xxx
-// Sends the user's browser to Google's consent screen.
+// GET /auth/google/start?login=xxx
+// Sends the user's browser to Google's consent screen. The `login` code is a
+// one-time value the app made up; we carry it through the round-trip (in
+// `state`) so the callback can park the session token where the app can find it.
 exports.handler = async (event) => {
-  const userId = event.queryStringParameters?.userId;
-  if (!userId) {
-    return { statusCode: 400, body: "userId query parameter is required" };
-  }
+  const login = event.queryStringParameters?.login || crypto.randomUUID();
 
   const oauth2Client = createOAuthClient();
 
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline", // ask for a long-lived "refresh token"
-    prompt: "consent",      // force Google to return the refresh token
+    prompt: "consent", // force Google to return the refresh token
     scope: SCOPES,
-    state: userId,          // carry the userId through the round-trip, so the
-                            // callback knows whose calendar this is
+    state: login, // carry the login code through the round-trip
   });
 
   // 302 = "redirect the browser to this Location".

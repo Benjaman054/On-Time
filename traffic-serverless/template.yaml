@@ -179,6 +179,24 @@ Resources:
             Path: /auth/google/callback
             Method: GET
 
+  # ---- Poll endpoint: the app collects its session token here ----
+  AuthSessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/authSession.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /auth/session
+            Method: GET
+
   # ---- Create a meeting (adds it to Google Calendar) ----
   CreateMeetingFunction:
     Type: AWS::Serverless::Function
