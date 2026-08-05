@@ -1,0 +1,72 @@
+# =============================================================================
+# CI = Continuous Integration.
+# GitHub runs this automatically on a fresh cloud machine every time you push to
+# main OR open a Pull Request. It checks that both apps install and build, so
+# broken code is caught BEFORE it reaches your main branch.
+#
+# You can watch each run in your repo's "Actions" tab.
+# =============================================================================
+name: CI
+
+# WHEN should this run?
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A workflow is made of "jobs". These two run in parallel on separate machines.
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1 — the AWS backend
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-latest # the type of cloud machine to use
+    defaults:
+      run:
+        working-directory: traffic-serverless # run every step in this folder
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4 # downloads your repo onto the machine
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install # backend has no lock file, so use install
+
+      - name: Check every source file for syntax errors
+        run: |
+          for f in $(find src -name '*.js'); do
+            echo "checking $f"
+            node --check "$f"
+          done
+
+  # ---------------------------------------------------------------------------
+  # Job 2 — the Expo frontend
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: traffic-expo
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm # speeds up repeat runs by caching downloaded packages
+          cache-dependency-path: traffic-expo/package-lock.json
+
+      - name: Install dependencies (exact versions from the lock file)
+        run: npm ci # frontend HAS a lock file, so use the stricter "ci"
+
+      - name: Make sure the app still bundles
+        run: npx expo export --platform android --output-dir dist
