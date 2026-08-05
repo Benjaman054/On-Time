@@ -13,8 +13,15 @@ function createOAuthClient() {
   );
 }
 
-// Read AND write events — read is needed to plan trips, write so the app can
-// add meetings to the calendar. (calendar.events covers both.)
-const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
+// What we ask the user to grant:
+//  - openid / email / profile: so Google tells us WHO the user is (their unique
+//    id, email, name) — this is how we identify the account. Non-sensitive.
+//  - calendar.events: read (to plan trips) + write (to add meetings).
+const SCOPES = [
+  "openid",
+  "https://www.googleapis.com/auth/userinfo.email",
+  "https://www.googleapis.com/auth/userinfo.profile",
+  "https://www.googleapis.com/auth/calendar.events",
+];
 
 module.exports = { createOAuthClient, SCOPES };
