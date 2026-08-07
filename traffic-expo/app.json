@@ -1,15 +1,17 @@
 {
   "expo": {
-    "name": "traffic-expo",
+    "name": "ON-Time",
     "slug": "traffic-expo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.benny.ontime"
     },
     "android": {
+      "package": "com.benny.ontime",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
