@@ -30,5 +30,6 @@ exports.handler = async (event) => {
     notifyTelegram: user.notifyTelegram ?? null,
     telegramChatId: user.telegramChatId ?? null,
     paused: user.paused ?? null,
+    timezone: user.timezone ?? null,
   });
 };

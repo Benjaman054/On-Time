@@ -9,6 +9,7 @@ import { PrimaryButton } from '../components/Button';
 import { useTheme } from '../theme-context';
 import { useAuth } from '../auth-context';
 import { getPreferences, savePreferences } from '../api';
+import { deviceTimeZone } from '../time';
 
 export function SettingsScreen() {
   const { colors, dark, toggle } = useTheme();
@@ -69,6 +70,7 @@ export function SettingsScreen() {
         notifyTelegram,
         telegramChatId: telegramChatId.trim(),
         paused,
+        timezone: deviceTimeZone(),
       });
       setSaving(false);
       setMessage('Saved ✓');

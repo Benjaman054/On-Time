@@ -23,6 +23,7 @@ exports.handler = async (event) => {
     notifyTelegram,
     telegramChatId,
     paused,
+    timezone,
   } = body;
 
   if (!homeAddress || !checkTime) {
@@ -40,7 +41,8 @@ exports.handler = async (event) => {
       UpdateExpression:
         "SET homeAddress = :h, checkTime = :c, " +
         "daysAhead = :d, notifyEmail = :ne, notifyTelegram = :nt, " +
-        "telegramChatId = :tc, paused = :p",
+        "telegramChatId = :tc, paused = :p, #tz = :tz",
+      ExpressionAttributeNames: { "#tz": "timezone" }, // "timezone" is reserved
       ExpressionAttributeValues: {
         ":h": homeAddress,
         ":c": checkTime,
@@ -49,6 +51,7 @@ exports.handler = async (event) => {
         ":nt": notifyTelegram === true, // default false
         ":tc": (telegramChatId || "").toString().trim(), // "" if not set
         ":p": paused === true, // default false
+        ":tz": timezone || "Asia/Jerusalem", // the user's IANA timezone
       },
     })
   );

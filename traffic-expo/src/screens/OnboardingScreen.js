@@ -8,6 +8,7 @@ import { TimeField, DaysSelector } from '../components/Pickers';
 import { PrimaryButton, OutlineButton } from '../components/Button';
 import { useTheme } from '../theme-context';
 import { savePreferences } from '../api';
+import { deviceTimeZone } from '../time';
 
 const TOTAL = 3;
 
@@ -36,6 +37,7 @@ export function OnboardingScreen({ onFinished }) {
         notifyTelegram: false,
         telegramChatId: '',
         paused: false,
+        timezone: deviceTimeZone(),
       });
       onFinished();
     } catch (e) {

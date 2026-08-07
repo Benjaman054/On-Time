@@ -4,7 +4,8 @@ const ses = new SESClient({});
 const TIMEZONE = process.env.TIMEZONE || "Asia/Jerusalem";
 const BRAND = "#2563EB";
 
-async function sendPlanEmail(to, from, plans, homeAddress) {
+async function sendPlanEmail(to, from, plans, homeAddress, timezone) {
+  const tz = timezone || TIMEZONE;
   const valid = plans.filter((p) => p.leaveBy);
   if (valid.length === 0) return;
 
@@ -13,8 +14,8 @@ async function sendPlanEmail(to, from, plans, homeAddress) {
     .map(
       (p) =>
         `${p.title} — ${p.location}\n` +
-        `Meeting: ${fmt(p.meetingTime)}\n` +
-        `LEAVE BY: ${fmt(p.leaveBy)}  (drive ${driveRange(p)})\n` +
+        `Meeting: ${fmt(p.meetingTime, tz)}\n` +
+        `LEAVE BY: ${fmt(p.leaveBy, tz)}  (drive ${driveRange(p)})\n` +
         `Route: ${mapsLink(homeAddress, p.location)}`
     )
     .join("\n\n");
@@ -28,10 +29,10 @@ async function sendPlanEmail(to, from, plans, homeAddress) {
       <div style="font-size:16px;color:#6b7280;margin:4px 0 16px;">${esc(p.location)}</div>
 
       <div style="font-size:16px;color:#374151;margin-bottom:6px;">
-        Meeting: <strong>${fmt(p.meetingTime)}</strong>
+        Meeting: <strong>${fmt(p.meetingTime, tz)}</strong>
       </div>
       <div style="font-size:22px;font-weight:700;color:${BRAND};margin-bottom:4px;">
-        Leave by ${fmt(p.leaveBy)}
+        Leave by ${fmt(p.leaveBy, tz)}
       </div>
       <div style="font-size:15px;color:#6b7280;margin-bottom:18px;">
         Drive ${driveRange(p)}
@@ -86,9 +87,9 @@ function driveRange(p) {
   return d ? `${d.withoutTraffic}–${d.withTraffic} min` : "";
 }
 
-function fmt(iso) {
+function fmt(iso, tz) {
   return new Date(iso).toLocaleString("en-GB", {
-    timeZone: TIMEZONE,
+    timeZone: tz || TIMEZONE,
     weekday: "short",
     day: "numeric",
     month: "short",

@@ -23,8 +23,6 @@ exports.handler = async (event = {}) => {
     return { mode: "manual", userId: event.userId };
   }
 
-  const nowMinutes = currentMinutesInZone(TIMEZONE);
-  const today = currentDateInZone(TIMEZONE); // "YYYY-MM-DD"
   const { Items = [] } = await ddb.send(new ScanCommand({ TableName: TABLE }));
 
   let processed = 0;
@@ -37,6 +35,11 @@ exports.handler = async (event = {}) => {
     const wantsEmail = user.notifyEmail !== false;
     const wantsTelegram = user.notifyTelegram === true && !!user.telegramChatId;
     if (!wantsEmail && !wantsTelegram) continue;
+
+    // Evaluate "is it their time yet?" in THIS user's own timezone.
+    const tz = user.timezone || TIMEZONE;
+    const nowMinutes = currentMinutesInZone(tz);
+    const today = currentDateInZone(tz); // "YYYY-MM-DD" in their zone
 
     const target = parseHHmm(user.checkTime);
     if (target === null) continue;
@@ -88,13 +91,16 @@ async function processUser(user) {
   );
   console.log(`Saved ${plans.length} plans for ${user.userId}`);
 
+  const tz = user.timezone || TIMEZONE;
+
   if (user.notifyEmail !== false && user.email && process.env.SENDER_EMAIL) {
     try {
       await sendPlanEmail(
         user.email,
         process.env.SENDER_EMAIL,
         plans,
-        user.homeAddress
+        user.homeAddress,
+        tz
       );
       console.log(`Emailed ${user.email}`);
     } catch (e) {
@@ -104,7 +110,7 @@ async function processUser(user) {
 
   if (user.notifyTelegram === true && user.telegramChatId && process.env.TELEGRAM_BOT_TOKEN) {
     try {
-      await sendPlanTelegram(user.telegramChatId, plans, user.homeAddress);
+      await sendPlanTelegram(user.telegramChatId, plans, user.homeAddress, tz);
       console.log(`Telegrammed ${user.userId}`);
     } catch (e) {
       console.error(`Telegram failed for ${user.userId}: ${e.message}`);

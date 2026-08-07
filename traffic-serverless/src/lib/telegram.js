@@ -7,11 +7,12 @@
 
 const TIMEZONE = process.env.TIMEZONE || "Asia/Jerusalem";
 
-async function sendPlanTelegram(chatId, plans, homeAddress) {
+async function sendPlanTelegram(chatId, plans, homeAddress, timezone) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) throw new Error("TELEGRAM_BOT_TOKEN is not set");
   if (!chatId) throw new Error("No Telegram chat id for this user");
 
+  const tz = timezone || TIMEZONE;
   const valid = plans.filter((p) => p.leaveBy);
   if (valid.length === 0) return; // nothing worth sending
 
@@ -19,8 +20,8 @@ async function sendPlanTelegram(chatId, plans, homeAddress) {
     .map(
       (p) =>
         `<b>${esc(p.title)}</b> — ${esc(p.location)}\n` +
-        `Meeting: ${fmt(p.meetingTime)}\n` +
-        `Leave by <b>${fmt(p.leaveBy)}</b>` +
+        `Meeting: ${fmt(p.meetingTime, tz)}\n` +
+        `Leave by <b>${fmt(p.leaveBy, tz)}</b>` +
         (driveRange(p) ? ` (drive ${driveRange(p)})` : "") +
         `\n<a href="${mapsLink(homeAddress, p.location)}">Open route in Maps</a>`
     )
@@ -56,9 +57,9 @@ function driveRange(p) {
   return d ? `${d.withoutTraffic}–${d.withTraffic} min` : "";
 }
 
-function fmt(iso) {
+function fmt(iso, tz) {
   return new Date(iso).toLocaleString("en-GB", {
-    timeZone: TIMEZONE,
+    timeZone: tz || TIMEZONE,
     weekday: "short",
     day: "numeric",
     month: "short",

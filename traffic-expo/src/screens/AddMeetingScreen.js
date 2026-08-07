@@ -9,7 +9,7 @@ import { TimeField, DateField } from '../components/Pickers';
 import { PrimaryButton, OutlineButton } from '../components/Button';
 import { useTheme } from '../theme-context';
 import { createMeeting } from '../api';
-import { toIsraelIso, israelWallClockEpoch } from '../time';
+import { toLocalIso, localWallClockEpoch } from '../time';
 
 export function AddMeetingScreen({ navigation }) {
   const { colors } = useTheme();
@@ -36,7 +36,7 @@ export function AddMeetingScreen({ navigation }) {
       setError('End time must be after start time.');
       return;
     }
-    if (israelWallClockEpoch(date, start.h, start.m) < Date.now()) {
+    if (localWallClockEpoch(date, start.h, start.m) < Date.now()) {
       setError('That time is already in the past.');
       return;
     }
@@ -47,8 +47,8 @@ export function AddMeetingScreen({ navigation }) {
       await createMeeting({
         title,
         location,
-        start: toIsraelIso(date, start.h, start.m),
-        end: toIsraelIso(date, end.h, end.m),
+        start: toLocalIso(date, start.h, start.m),
+        end: toLocalIso(date, end.h, end.m),
       });
       navigation.goBack();
     } catch (e) {
