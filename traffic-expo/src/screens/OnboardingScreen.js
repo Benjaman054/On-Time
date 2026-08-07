@@ -8,7 +8,6 @@ import { TimeField, DaysSelector } from '../components/Pickers';
 import { PrimaryButton, OutlineButton } from '../components/Button';
 import { useTheme } from '../theme-context';
 import { savePreferences } from '../api';
-import { USER_EMAIL } from '../constants';
 
 const TOTAL = 3;
 
@@ -32,7 +31,6 @@ export function OnboardingScreen({ onFinished }) {
       await savePreferences({
         homeAddress: address,
         checkTime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
-        email: USER_EMAIL,
         daysAhead: days,
         notifyEmail: true,
         notifyTelegram: false,

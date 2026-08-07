@@ -18,7 +18,6 @@ exports.handler = async (event) => {
   const {
     homeAddress,
     checkTime,
-    email,
     daysAhead,
     notifyEmail,
     notifyTelegram,
@@ -26,24 +25,25 @@ exports.handler = async (event) => {
     paused,
   } = body;
 
-  if (!homeAddress || !checkTime || !email) {
+  if (!homeAddress || !checkTime) {
     return response(400, {
-      error: "homeAddress, checkTime and email are all required",
+      error: "homeAddress and checkTime are required",
     });
   }
 
+  // NOTE: we do NOT set `email` here — it comes from the user's Google account
+  // (saved at sign-in) so it's always correct and can't be spoofed per-user.
   await ddb.send(
     new UpdateCommand({
       TableName: TABLE,
       Key: { userId },
       UpdateExpression:
-        "SET homeAddress = :h, checkTime = :c, email = :e, " +
+        "SET homeAddress = :h, checkTime = :c, " +
         "daysAhead = :d, notifyEmail = :ne, notifyTelegram = :nt, " +
         "telegramChatId = :tc, paused = :p",
       ExpressionAttributeValues: {
         ":h": homeAddress,
         ":c": checkTime,
-        ":e": email,
         ":d": clampDays(daysAhead),
         ":ne": notifyEmail !== false, // default true
         ":nt": notifyTelegram === true, // default false

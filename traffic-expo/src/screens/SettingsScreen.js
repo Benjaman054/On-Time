@@ -9,7 +9,6 @@ import { PrimaryButton } from '../components/Button';
 import { useTheme } from '../theme-context';
 import { useAuth } from '../auth-context';
 import { getPreferences, savePreferences } from '../api';
-import { USER_EMAIL } from '../constants';
 
 export function SettingsScreen() {
   const { colors, dark, toggle } = useTheme();
@@ -24,6 +23,7 @@ export function SettingsScreen() {
   }
 
   const [address, setAddress] = useState('');
+  const [email, setEmail] = useState('');
   const [hour, setHour] = useState(20);
   const [minute, setMinute] = useState(0);
   const [days, setDays] = useState(7);
@@ -39,6 +39,7 @@ export function SettingsScreen() {
     (async () => {
       try {
         const p = await getPreferences();
+        if (p?.email) setEmail(p.email);
         if (p?.homeAddress) setAddress(p.homeAddress);
         if (p?.checkTime) {
           const [h, m] = p.checkTime.split(':').map((x) => parseInt(x, 10));
@@ -63,7 +64,6 @@ export function SettingsScreen() {
       await savePreferences({
         homeAddress: address,
         checkTime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
-        email: USER_EMAIL,
         daysAhead: days,
         notifyEmail,
         notifyTelegram,
@@ -158,6 +158,12 @@ export function SettingsScreen() {
         style={{ width: '100%' }}
       />
       {message ? <Text style={{ color: colors.textMuted }}>{message}</Text> : null}
+
+      {email ? (
+        <Text style={{ color: colors.textMuted, textAlign: 'center' }}>
+          Signed in as {email}
+        </Text>
+      ) : null}
 
       <TouchableOpacity
         onPress={confirmSignOut}
