@@ -77,3 +77,8 @@ export function createMeeting({ title, location, start, end }) {
 export function signOutOnServer() {
   return request('/auth/signout', { method: 'POST' });
 }
+
+// ---- /telegram/connect ----  returns { url } — a one-time deep link to the bot
+export function connectTelegram() {
+  return request('/telegram/connect', { method: 'POST' });
+}

@@ -197,6 +197,44 @@ Resources:
             Path: /auth/session
             Method: GET
 
+  # ---- Telegram: app asks for a one-time connect deep link ----
+  TelegramConnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/telegramConnect.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /telegram/connect
+            Method: POST
+
+  # ---- Telegram: webhook Telegram calls when a user taps Start ----
+  TelegramWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/telegramWebhook.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /telegram/webhook
+            Method: POST
+
   # ---- Sign out: stop notifications + revoke the session token ----
   AuthSignoutFunction:
     Type: AWS::Serverless::Function

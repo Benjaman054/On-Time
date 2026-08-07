@@ -1,14 +1,14 @@
 // Settings: home address, daily email time, days-ahead, notification toggles,
 // pause switch, and light/dark theme. Save posts everything to the backend.
 import React, { useEffect, useState } from 'react';
-import { View, Text, Switch, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet } from 'react-native';
+import { View, Text, Switch, TouchableOpacity, ScrollView, Alert, Linking, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AddressAutocomplete } from '../components/AddressAutocomplete';
 import { TimeField, DaysSelector } from '../components/Pickers';
 import { PrimaryButton } from '../components/Button';
 import { useTheme } from '../theme-context';
 import { useAuth } from '../auth-context';
-import { getPreferences, savePreferences } from '../api';
+import { getPreferences, savePreferences, connectTelegram } from '../api';
 import { deviceTimeZone } from '../time';
 
 export function SettingsScreen() {
@@ -23,6 +23,40 @@ export function SettingsScreen() {
     ]);
   }
 
+  // Ask the backend for a one-time bot link, open Telegram, then poll until the
+  // webhook has linked the chat to this account.
+  async function handleConnectTelegram() {
+    setConnectingTg(true);
+    try {
+      const { url } = await connectTelegram();
+      await Linking.openURL(url); // opens the Telegram app at our bot
+      const linked = await pollForTelegramLink();
+      if (linked) {
+        setTelegramChatId(linked);
+        setNotifyTelegram(true);
+      } else {
+        Alert.alert('Not linked yet', 'Tap Start in Telegram, then try Connect again.');
+      }
+    } catch (e) {
+      Alert.alert('Could not connect', e.message || 'Please try again.');
+    } finally {
+      setConnectingTg(false);
+    }
+  }
+
+  async function pollForTelegramLink({ attempts = 40, intervalMs = 2000 } = {}) {
+    for (let i = 0; i < attempts; i++) {
+      await new Promise((r) => setTimeout(r, intervalMs));
+      try {
+        const p = await getPreferences();
+        if (p?.telegramChatId) return p.telegramChatId;
+      } catch {
+        // keep polling through transient errors
+      }
+    }
+    return null;
+  }
+
   const [address, setAddress] = useState('');
   const [email, setEmail] = useState('');
   const [hour, setHour] = useState(20);
@@ -34,6 +68,7 @@ export function SettingsScreen() {
   const [paused, setPaused] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [connectingTg, setConnectingTg] = useState(false);
 
   // Load existing preferences once.
   useEffect(() => {
@@ -117,21 +152,22 @@ export function SettingsScreen() {
         <ToggleRow label="Email" value={notifyEmail} onChange={setNotifyEmail} colors={colors} />
         <ToggleRow label="Telegram" value={notifyTelegram} onChange={setNotifyTelegram} colors={colors} />
         {notifyTelegram && (
-          <View style={{ gap: 6, marginTop: 4 }}>
-            <TextInput
-              value={telegramChatId}
-              onChangeText={setTelegramChatId}
-              placeholder="Telegram chat ID (e.g. 123456789)"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="numbers-and-punctuation"
-              style={[
-                styles.input,
-                { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBg },
-              ]}
-            />
-            <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-              Open our Telegram bot, tap Start, and it will show you this number.
-            </Text>
+          <View style={{ gap: 8, marginTop: 4 }}>
+            {telegramChatId ? (
+              <Text style={{ color: colors.brand, fontWeight: '600' }}>✓ Telegram connected</Text>
+            ) : (
+              <>
+                <PrimaryButton
+                  title={connectingTg ? 'Waiting for Telegram…' : 'Connect Telegram'}
+                  onPress={handleConnectTelegram}
+                  loading={connectingTg}
+                  colors={colors}
+                />
+                <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+                  Opens our Telegram bot — tap Start there and you're linked automatically.
+                </Text>
+              </>
+            )}
           </View>
         )}
       </Section>
