@@ -1,13 +1,14 @@
 const { GetCommand } = require("@aws-sdk/lib-dynamodb");
 const { ddb, TABLE, response } = require("./lib/dynamo");
+const { getUserIdFromRequest } = require("./lib/auth");
 
-// GET /preferences?userId=xxx
+// GET /preferences   (identity comes from the session token)
 // Returns ONLY the safe, user-facing settings. Never the googleRefreshToken,
 // stored plans, or sync bookkeeping — those stay server-side.
 exports.handler = async (event) => {
-  const userId = event.queryStringParameters?.userId;
+  const userId = await getUserIdFromRequest(event);
   if (!userId) {
-    return response(400, { error: "userId query parameter is required" });
+    return response(401, { error: "Not signed in" });
   }
 
   const result = await ddb.send(

@@ -2,16 +2,20 @@ const { GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { ddb, TABLE, response } = require("./lib/dynamo");
 const { createEvent } = require("./lib/calendar");
 const { buildPlansForUser } = require("./lib/planner");
+const { getUserIdFromRequest } = require("./lib/auth");
 
-// POST /meetings/create
-// Body: { userId, title, location, start, end }  (start/end = ISO with offset)
+// POST /meetings/create   (identity comes from the session token)
+// Body: { title, location, start, end }  (start/end = ISO with offset)
 // Adds the event to Google Calendar, then recomputes so the app shows it.
 exports.handler = async (event) => {
-  const body = JSON.parse(event.body || "{}");
-  const { userId, title, location, start, end } = body;
+  const userId = await getUserIdFromRequest(event);
+  if (!userId) return response(401, { error: "Not signed in" });
 
-  if (!userId || !title || !location ||  !start || !end) {
-    return response(400, { error: "userId, title, location, start and end are required" });
+  const body = JSON.parse(event.body || "{}");
+  const { title, location, start, end } = body;
+
+  if (!title || !location || !start || !end) {
+    return response(400, { error: "title, location, start and end are required" });
   }
 
   // Safety net: don't create meetings in the past. (The app also checks, but

@@ -1,25 +1,30 @@
-// First page: the ON-Time logo and a "Register with Google" button. The button
-// opens the backend's Google sign-in page in the browser (same as Android),
-// then moves on to onboarding.
-import React from 'react';
+// First page: the ON-Time logo and a "Sign in with Google" button. Tapping it
+// runs the real sign-in (opens Google, waits for the session token), then moves
+// the user on into the app.
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as WebBrowser from 'expo-web-browser';
 import { LogoBadge, Wordmark } from '../components/Logo';
 import { PrimaryButton } from '../components/Button';
 import { useTheme } from '../theme-context';
-import { registerUrl } from '../api';
+import { login } from '../auth';
 
-export function WelcomeScreen({ onRegistered }) {
+export function WelcomeScreen({ onLoggedIn }) {
   const { colors } = useTheme();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
 
-  async function handleRegister() {
+  async function handleSignIn() {
+    setBusy(true);
+    setError(null);
     try {
-      await WebBrowser.openBrowserAsync(registerUrl);
-    } catch {
-      // Even if the browser fails to open, let the user continue setup.
+      await login(); // opens Google, polls, stores the token
+      onLoggedIn();
+    } catch (e) {
+      setError(e.message || 'Sign-in failed. Please try again.');
+    } finally {
+      setBusy(false);
     }
-    onRegistered();
   }
 
   return (
@@ -37,11 +42,20 @@ export function WelcomeScreen({ onRegistered }) {
       <View style={styles.spacer} />
 
       <PrimaryButton
-        title="Register with Google"
-        onPress={handleRegister}
+        title={busy ? 'Signing in…' : 'Sign in with Google'}
+        onPress={handleSignIn}
+        loading={busy}
         colors={colors}
         style={{ width: '100%' }}
       />
+      {busy && (
+        <Text style={[styles.privacy, { color: colors.textMuted, marginTop: 12 }]}>
+          Approve in the browser, then come back — we'll sign you in automatically.
+        </Text>
+      )}
+      {error && (
+        <Text style={[styles.privacy, { color: colors.error, marginTop: 12 }]}>{error}</Text>
+      )}
       <View style={{ height: 16 }} />
       <Text style={[styles.privacy, { color: colors.textMuted }]}>
         We only read your calendar to tell you when to leave.

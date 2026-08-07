@@ -2,20 +2,21 @@ const { GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { ddb, TABLE, response } = require("./lib/dynamo");
 const { buildPlansForUser, } = require("./lib/planner");
 const { hasCalendarChangedSince } = require("./lib/calendar");
+const { getUserIdFromRequest } = require("./lib/auth");
 
-// GET /meetings?userId=xxx[&refresh=true][&sync=true]
+// GET /meetings[&refresh=true][&sync=true]   (identity from the session token)
 //
 //   (nothing)      -> return the stored plans (instant, cheap)
 //   sync=true      -> cheap "did the calendar change?" check; recompute only
 //                     if it did. This is what the 1-minute poll uses.
 //   refresh=true   -> force a full recompute (used rarely, e.g. debugging)
 exports.handler = async (event) => {
+  const userId = await getUserIdFromRequest(event);
+  if (!userId) return response(401, { error: "Not signed in" });
+
   const qs = event.queryStringParameters || {};
-  const userId = qs.userId;
   const refresh = qs.refresh === "true";
   const sync = qs.sync === "true";
-
-  if (!userId) return response(400, { error: "userId is required" });
 
   const { Item: user } = await ddb.send(
     new GetCommand({ TableName: TABLE, Key: { userId } })

@@ -2,17 +2,20 @@ const { GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { ddb, TABLE, response } = require("./lib/dynamo");
 const { buildPlansForUser } = require("./lib/planner");
 const { clampDays } = require("./lib/util");
+const { getUserIdFromRequest } = require("./lib/auth");
 
-// POST /preferences
-// Body: { userId, homeAddress, checkTime, email,
-//         daysAhead, notifyEmail, notifyWhatsapp, paused }
+// POST /preferences   (identity comes from the session token)
+// Body: { homeAddress, checkTime, email,
+//         daysAhead, notifyEmail, notifyTelegram, telegramChatId, paused }
 //
 // Saves the preferences, then recomputes the plans right away so the app can
 // show up-to-date meetings immediately (no waiting for the daily worker).
 exports.handler = async (event) => {
+  const userId = await getUserIdFromRequest(event);
+  if (!userId) return response(401, { error: "Not signed in" });
+
   const body = JSON.parse(event.body || "{}");
   const {
-    userId,
     homeAddress,
     checkTime,
     email,
@@ -23,9 +26,9 @@ exports.handler = async (event) => {
     paused,
   } = body;
 
-  if (!userId || !homeAddress || !checkTime || !email) {
+  if (!homeAddress || !checkTime || !email) {
     return response(400, {
-      error: "userId, homeAddress, checkTime and email are all required",
+      error: "homeAddress, checkTime and email are all required",
     });
   }
 

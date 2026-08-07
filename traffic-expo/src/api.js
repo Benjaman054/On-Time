@@ -1,20 +1,19 @@
-// All network calls to the AWS backend live here. The rest of the app never
-// touches fetch() directly — it calls these functions. Same backend and same
-// single-user id ("benny") as the Android app; nothing on the server changes.
+// All network calls to the AWS backend live here. Every request now carries the
+// session token in the Authorization header — the backend uses THAT to know who
+// you are. We never send a userId; the URL is no longer trusted.
+import { BASE_URL } from './config';
+import { getToken, clearToken } from './auth';
 
-export const BASE_URL =
-  'https://hy76b43p4m.execute-api.eu-central-1.amazonaws.com';
-
-export const USER_ID = 'benny';
-
-// The Google sign-in page we open in the browser from the Welcome screen.
-export const registerUrl = `${BASE_URL}/auth/google/start?userId=${USER_ID}`;
-
-// Shared helper: run a request, and turn a failure into a readable Error.
-// It also pulls the backend's { "error": "..." } message out when present.
+// Shared helper: attach the token, run the request, and turn failures into
+// readable Errors. A 401 means our session is no longer valid → forget it.
 async function request(path, options = {}) {
+  const token = await getToken();
+
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...options,
   });
 
@@ -26,6 +25,11 @@ async function request(path, options = {}) {
     data = null;
   }
 
+  if (res.status === 401) {
+    // Session invalid/expired — drop the token so the app returns to sign-in.
+    await clearToken();
+    throw new Error('Your session expired. Please sign in again.');
+  }
   if (!res.ok) {
     const msg = data && data.error ? data.error : `Server error ${res.status}`;
     throw new Error(msg);
@@ -33,11 +37,9 @@ async function request(path, options = {}) {
   return data;
 }
 
-// ---- /meetings ----
-// Returns { count, plans: [...], updatedAt }
+// ---- /meetings ----  Returns { count, plans: [...], updatedAt }
 export function getMeetings({ refresh = false, sync = false } = {}) {
   const params = new URLSearchParams({
-    userId: USER_ID,
     refresh: String(refresh),
     sync: String(sync),
   });
@@ -46,19 +48,17 @@ export function getMeetings({ refresh = false, sync = false } = {}) {
 
 // ---- /preferences ----
 export function getPreferences() {
-  const params = new URLSearchParams({ userId: USER_ID });
-  return request(`/preferences?${params.toString()}`);
+  return request('/preferences');
 }
 
 export function savePreferences(prefs) {
   return request('/preferences', {
     method: 'POST',
-    body: JSON.stringify({ userId: USER_ID, ...prefs }),
+    body: JSON.stringify(prefs),
   });
 }
 
-// ---- /places/autocomplete ----
-// Returns { predictions: [{ description, placeId }] }
+// ---- /places/autocomplete ----  Returns { predictions: [{ description, placeId }] }
 export function autocomplete(input) {
   const params = new URLSearchParams({ input });
   return request(`/places/autocomplete?${params.toString()}`);
@@ -69,6 +69,6 @@ export function autocomplete(input) {
 export function createMeeting({ title, location, start, end }) {
   return request('/meetings/create', {
     method: 'POST',
-    body: JSON.stringify({ userId: USER_ID, title, location, start, end }),
+    body: JSON.stringify({ title, location, start, end }),
   });
 }

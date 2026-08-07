@@ -1,18 +1,27 @@
 // Settings: home address, daily email time, days-ahead, notification toggles,
 // pause switch, and light/dark theme. Save posts everything to the backend.
 import React, { useEffect, useState } from 'react';
-import { View, Text, Switch, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Switch, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AddressAutocomplete } from '../components/AddressAutocomplete';
 import { TimeField, DaysSelector } from '../components/Pickers';
 import { PrimaryButton } from '../components/Button';
 import { useTheme } from '../theme-context';
+import { useAuth } from '../auth-context';
 import { getPreferences, savePreferences } from '../api';
 import { USER_EMAIL } from '../constants';
 
 export function SettingsScreen() {
   const { colors, dark, toggle } = useTheme();
+  const { signOut } = useAuth();
   const insets = useSafeAreaInsets();
+
+  function confirmSignOut() {
+    Alert.alert('Sign out?', 'You will need to sign in with Google again.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => signOut() },
+    ]);
+  }
 
   const [address, setAddress] = useState('');
   const [hour, setHour] = useState(20);
@@ -149,6 +158,13 @@ export function SettingsScreen() {
         style={{ width: '100%' }}
       />
       {message ? <Text style={{ color: colors.textMuted }}>{message}</Text> : null}
+
+      <TouchableOpacity
+        onPress={confirmSignOut}
+        style={[styles.signOut, { borderColor: colors.border }]}
+      >
+        <Text style={{ color: colors.error, fontWeight: '600', fontSize: 16 }}>Sign out</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -216,4 +232,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
+  signOut: {
+    marginTop: 8,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
 });
+
