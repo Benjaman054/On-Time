@@ -197,6 +197,24 @@ Resources:
             Path: /auth/session
             Method: GET
 
+  # ---- Sign out: stop notifications + revoke the session token ----
+  AuthSignoutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/authSignout.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /auth/signout
+            Method: POST
+
   # ---- Create a meeting (adds it to Google Calendar) ----
   CreateMeetingFunction:
     Type: AWS::Serverless::Function

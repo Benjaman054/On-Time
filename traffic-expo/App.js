@@ -12,7 +12,7 @@ import { ThemeProvider } from './src/theme-context';
 import { getColors } from './src/theme';
 import { getThemeIsDark, setThemeIsDark } from './src/storage';
 import { getToken, clearToken } from './src/auth';
-import { getPreferences } from './src/api';
+import { getPreferences, signOutOnServer } from './src/api';
 import { AuthProvider } from './src/auth-context';
 import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
@@ -66,8 +66,14 @@ export default function App() {
     setStage('app');
   }
 
-  // Sign out: forget the session token and return to the Welcome screen.
+  // Sign out: tell the backend to stop messages + revoke the token (best-effort,
+  // using the token while we still have it), then forget it locally.
   async function handleSignOut() {
+    try {
+      await signOutOnServer();
+    } catch {
+      // Even if the server call fails, still sign out on the device.
+    }
     await clearToken();
     setStage('welcome');
   }

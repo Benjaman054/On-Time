@@ -42,13 +42,15 @@ exports.handler = async (event) => {
       TableName: TABLE,
       Key: { userId },
       UpdateExpression:
-        "SET googleRefreshToken = :t, email = :e, #nm = :n, googleConnectedAt = :c",
+        "SET googleRefreshToken = :t, email = :e, #nm = :n, " +
+        "googleConnectedAt = :c, signedOut = :false",
       ExpressionAttributeNames: { "#nm": "name" }, // "name" is a reserved word
       ExpressionAttributeValues: {
         ":t": tokens.refresh_token,
         ":e": email,
         ":n": name,
         ":c": new Date().toISOString(),
+        ":false": false, // signing in resumes notifications
       },
     })
   );

@@ -32,6 +32,7 @@ exports.handler = async (event = {}) => {
     // Skip internal bookkeeping rows (session#… / login#…), not real users.
     if (String(user.userId).includes("#")) continue;
     if (!user.googleRefreshToken || !user.homeAddress || user.paused) continue;
+    if (user.signedOut) continue; // signed out -> no messages until they return
     // Skip only if the user wants NO notifications at all.
     const wantsEmail = user.notifyEmail !== false;
     const wantsTelegram = user.notifyTelegram === true && !!user.telegramChatId;
@@ -65,6 +66,10 @@ async function processUser(user) {
   if (!user.googleRefreshToken || !user.homeAddress) return;
   if (user.paused) {
     console.log(`Skipping ${user.userId} (paused)`);
+    return;
+  }
+  if (user.signedOut) {
+    console.log(`Skipping ${user.userId} (signed out)`);
     return;
   }
 

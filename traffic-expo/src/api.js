@@ -72,3 +72,8 @@ export function createMeeting({ title, location, start, end }) {
     body: JSON.stringify({ title, location, start, end }),
   });
 }
+
+// ---- /auth/signout ----  stops notifications + revokes the token server-side
+export function signOutOnServer() {
+  return request('/auth/signout', { method: 'POST' });
+}
