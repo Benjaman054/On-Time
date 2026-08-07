@@ -10,13 +10,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/theme-context';
 import { getColors } from './src/theme';
-import {
-  isOnboarded,
-  setOnboarded,
-  getThemeIsDark,
-  setThemeIsDark,
-} from './src/storage';
+import { getThemeIsDark, setThemeIsDark } from './src/storage';
 import { getToken, clearToken } from './src/auth';
+import { getPreferences } from './src/api';
 import { AuthProvider } from './src/auth-context';
 import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
@@ -26,8 +22,7 @@ export default function App() {
   const [stage, setStage] = useState('loading'); // loading | welcome | onboarding | app
   const [dark, setDarkState] = useState(false);
 
-  // On startup: read the theme, then decide where to go based on whether we
-  // already hold a session token (are we signed in?).
+  // On startup: read the theme, then route based on the session token.
   useEffect(() => {
     (async () => {
       setDarkState(await getThemeIsDark());
@@ -35,7 +30,7 @@ export default function App() {
       if (!token) {
         setStage('welcome'); // must sign in first
       } else {
-        setStage((await isOnboarded()) ? 'app' : 'onboarding');
+        await routeAfterAuth();
       }
     })();
   }, []);
@@ -46,13 +41,28 @@ export default function App() {
     setThemeIsDark(value);
   }
 
+  // After sign-in (or on startup with a token): a brand-new user has no home
+  // address saved yet -> send them through onboarding; otherwise into the app.
+  // This "am I set up?" check comes from the BACKEND (per-user), not a device
+  // flag, so each account gets the right flow on any phone.
+  async function routeAfterAuth() {
+    try {
+      const prefs = await getPreferences();
+      setStage(prefs?.homeAddress ? 'app' : 'onboarding');
+    } catch {
+      // 401 => api.js already cleared the token, so send them to sign-in.
+      // Any other error (e.g. network) => proceed; screens show their own errors.
+      const stillSignedIn = await getToken();
+      setStage(stillSignedIn ? 'app' : 'welcome');
+    }
+  }
+
   // Called after a successful sign-in.
   async function handleLoggedIn() {
-    setStage((await isOnboarded()) ? 'app' : 'onboarding');
+    await routeAfterAuth();
   }
 
   async function finishOnboarding() {
-    await setOnboarded(true);
     setStage('app');
   }
 

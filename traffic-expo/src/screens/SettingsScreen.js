@@ -135,7 +135,7 @@ export function SettingsScreen() {
       </Section>
 
       <View style={styles.rowBetween}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Pause daily emails</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Pause all notifications</Text>
         <Switch
           value={paused}
           onValueChange={setPaused}
