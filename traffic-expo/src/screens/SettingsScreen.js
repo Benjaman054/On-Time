@@ -1,7 +1,7 @@
 // Settings: home address, daily email time, days-ahead, notification toggles,
 // pause switch, and light/dark theme. Save posts everything to the backend.
 import React, { useEffect, useState } from 'react';
-import { View, Text, Switch, TouchableOpacity, ScrollView, Alert, Linking, StyleSheet } from 'react-native';
+import { View, Text, Switch, TouchableOpacity, ScrollView, Alert, Linking, AppState, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AddressAutocomplete } from '../components/AddressAutocomplete';
 import { TimeField, DaysSelector } from '../components/Pickers';
@@ -23,39 +23,54 @@ export function SettingsScreen() {
     ]);
   }
 
-  // Ask the backend for a one-time bot link, open Telegram, then poll until the
-  // webhook has linked the chat to this account.
+  // Ask the backend for a one-time bot link and open Telegram. We DON'T poll
+  // while the user is away — instead the effect below reacts to them returning.
   async function handleConnectTelegram() {
-    setConnectingTg(true);
     try {
       const { url } = await connectTelegram();
-      await Linking.openURL(url); // opens the Telegram app at our bot
-      const linked = await pollForTelegramLink();
-      if (linked) {
-        setTelegramChatId(linked);
-        setNotifyTelegram(true);
-      } else {
-        Alert.alert('Not linked yet', 'Tap Start in Telegram, then try Connect again.');
-      }
+      setConnectingTg(true); // now "waiting for you to come back from Telegram"
+      await Linking.openURL(url);
     } catch (e) {
       Alert.alert('Could not connect', e.message || 'Please try again.');
-    } finally {
       setConnectingTg(false);
     }
   }
 
-  async function pollForTelegramLink({ attempts = 40, intervalMs = 2000 } = {}) {
-    for (let i = 0; i < attempts; i++) {
-      await new Promise((r) => setTimeout(r, intervalMs));
-      try {
-        const p = await getPreferences();
-        if (p?.telegramChatId) return p.telegramChatId;
-      } catch {
-        // keep polling through transient errors
+  // Pro pattern: when the app comes back to the FOREGROUND (the user returned
+  // from Telegram), check whether the webhook linked their chat. This makes the
+  // return feel instant instead of showing a spinner while they're away.
+  useEffect(() => {
+    if (!connectingTg) return;
+    let cancelled = false;
+
+    async function checkAfterReturn() {
+      // The webhook may land a beat after they switch back, so check a few times.
+      for (let i = 0; i < 5 && !cancelled; i++) {
+        try {
+          const p = await getPreferences();
+          if (p?.telegramChatId) {
+            setTelegramChatId(p.telegramChatId);
+            setNotifyTelegram(true);
+            setConnectingTg(false);
+            return;
+          }
+        } catch {
+          // ignore and retry
+        }
+        await new Promise((r) => setTimeout(r, 1500));
       }
+      // Came back but not linked (didn't tap Start) — reset so they can retry.
+      if (!cancelled) setConnectingTg(false);
     }
-    return null;
-  }
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkAfterReturn();
+    });
+    return () => {
+      cancelled = true;
+      sub.remove();
+    };
+  }, [connectingTg]);
 
   const [address, setAddress] = useState('');
   const [email, setEmail] = useState('');
@@ -164,7 +179,7 @@ export function SettingsScreen() {
                   colors={colors}
                 />
                 <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                  Opens our Telegram bot — tap Start there and you're linked automatically.
+                  Opens Telegram — tap Start, then switch back here and it finishes on its own.
                 </Text>
               </>
             )}
