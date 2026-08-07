@@ -12,7 +12,9 @@ exports.handler = async (event) => {
 
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline", // ask for a long-lived "refresh token"
-    prompt: "consent", // force Google to return the refresh token
+    // "select_account" lets the user pick WHICH Google account (needed for
+    // multi-user); "consent" forces Google to return the refresh token.
+    prompt: "select_account consent",
     scope: SCOPES,
     state: login, // carry the login code through the round-trip
   });

@@ -1,7 +1,8 @@
 // Settings: home address, daily email time, days-ahead, notification toggles,
 // pause switch, and light/dark theme. Save posts everything to the backend.
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Switch, TouchableOpacity, ScrollView, Alert, Linking, AppState, StyleSheet } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AddressAutocomplete } from '../components/AddressAutocomplete';
 import { TimeField, DaysSelector } from '../components/Pickers';
@@ -15,6 +16,19 @@ export function SettingsScreen() {
   const { colors, dark, toggle } = useTheme();
   const { signOut } = useAuth();
   const insets = useSafeAreaInsets();
+
+  const [address, setAddress] = useState('');
+  const [email, setEmail] = useState('');
+  const [hour, setHour] = useState(20);
+  const [minute, setMinute] = useState(0);
+  const [days, setDays] = useState(7);
+  const [notifyEmail, setNotifyEmail] = useState(true);
+  const [notifyTelegram, setNotifyTelegram] = useState(false);
+  const [telegramChatId, setTelegramChatId] = useState('');
+  const [paused, setPaused] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [connectingTg, setConnectingTg] = useState(false);
 
   function confirmSignOut() {
     Alert.alert('Sign out?', 'You will need to sign in with Google again.', [
@@ -43,70 +57,66 @@ export function SettingsScreen() {
     if (!connectingTg) return;
     let cancelled = false;
 
-    async function checkAfterReturn() {
-      // The webhook may land a beat after they switch back, so check a few times.
-      for (let i = 0; i < 5 && !cancelled; i++) {
-        try {
-          const p = await getPreferences();
-          if (p?.telegramChatId) {
-            setTelegramChatId(p.telegramChatId);
-            setNotifyTelegram(true);
-            setConnectingTg(false);
-            return;
-          }
-        } catch {
-          // ignore and retry
+    async function checkOnce() {
+      try {
+        const p = await getPreferences();
+        if (p?.telegramChatId && !cancelled) {
+          setTelegramChatId(p.telegramChatId);
+          setNotifyTelegram(true);
+          setConnectingTg(false);
         }
-        await new Promise((r) => setTimeout(r, 1500));
+      } catch {
+        // ignore — the next tick will retry
       }
-      // Came back but not linked (didn't tap Start) — reset so they can retry.
-      if (!cancelled) setConnectingTg(false);
     }
 
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') checkAfterReturn();
+    // Poll on a timer (works even if the app never backgrounded — e.g. you tap
+    // Start on Telegram Desktop) AND check instantly when the app returns to the
+    // foreground (the fast path when you Start on this same phone).
+    const interval = setInterval(checkOnce, 2500);
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') checkOnce();
     });
+    // Give up after ~2 minutes so the button never spins forever.
+    const timeout = setTimeout(() => {
+      if (!cancelled) setConnectingTg(false);
+    }, 120000);
+
+    checkOnce(); // also check right away
+
     return () => {
       cancelled = true;
+      clearInterval(interval);
+      clearTimeout(timeout);
       sub.remove();
     };
   }, [connectingTg]);
 
-  const [address, setAddress] = useState('');
-  const [email, setEmail] = useState('');
-  const [hour, setHour] = useState(20);
-  const [minute, setMinute] = useState(0);
-  const [days, setDays] = useState(7);
-  const [notifyEmail, setNotifyEmail] = useState(true);
-  const [notifyTelegram, setNotifyTelegram] = useState(false);
-  const [telegramChatId, setTelegramChatId] = useState('');
-  const [paused, setPaused] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [connectingTg, setConnectingTg] = useState(false);
-
-  // Load existing preferences once.
-  useEffect(() => {
-    (async () => {
-      try {
-        const p = await getPreferences();
-        if (p?.email) setEmail(p.email);
-        if (p?.homeAddress) setAddress(p.homeAddress);
-        if (p?.checkTime) {
-          const [h, m] = p.checkTime.split(':').map((x) => parseInt(x, 10));
-          if (!Number.isNaN(h)) setHour(h);
-          if (!Number.isNaN(m)) setMinute(m);
+  // Reload preferences whenever Settings comes into focus, so the screen always
+  // reflects current server state (e.g. Telegram just got connected).
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        try {
+          const p = await getPreferences();
+          if (p?.email) setEmail(p.email);
+          if (p?.homeAddress) setAddress(p.homeAddress);
+          if (p?.checkTime) {
+            const [h, m] = p.checkTime.split(':').map((x) => parseInt(x, 10));
+            if (!Number.isNaN(h)) setHour(h);
+            if (!Number.isNaN(m)) setMinute(m);
+          }
+          if (p?.daysAhead) setDays(p.daysAhead);
+          if (typeof p?.notifyEmail === 'boolean') setNotifyEmail(p.notifyEmail);
+          if (typeof p?.notifyTelegram === 'boolean') setNotifyTelegram(p.notifyTelegram);
+          setTelegramChatId(p?.telegramChatId ? String(p.telegramChatId) : '');
+          if (typeof p?.paused === 'boolean') setPaused(p.paused);
+        } catch {
+          // Keep current values if the load fails.
         }
-        if (p?.daysAhead) setDays(p.daysAhead);
-        if (typeof p?.notifyEmail === 'boolean') setNotifyEmail(p.notifyEmail);
-        if (typeof p?.notifyTelegram === 'boolean') setNotifyTelegram(p.notifyTelegram);
-        if (p?.telegramChatId) setTelegramChatId(String(p.telegramChatId));
-        if (typeof p?.paused === 'boolean') setPaused(p.paused);
-      } catch {
-        // Keep defaults if the load fails.
-      }
-    })();
-  }, []);
+      })();
+    }, [])
+  );
 
   async function save() {
     setSaving(true);
