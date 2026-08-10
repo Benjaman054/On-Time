@@ -1,7 +1,7 @@
-// First-run setup: three steps — home address, daily email time, days-ahead —
-// then it saves preferences to the backend and calls onFinished().
+// First-run setup: home address, daily time, days-ahead, and how to be notified
+// (email and/or Telegram) — then it saves preferences and calls onFinished().
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Switch, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AddressAutocomplete } from '../components/AddressAutocomplete';
 import { TimeField, DaysSelector } from '../components/Pickers';
@@ -9,8 +9,9 @@ import { PrimaryButton, OutlineButton } from '../components/Button';
 import { useTheme } from '../theme-context';
 import { savePreferences } from '../api';
 import { deviceTimeZone } from '../time';
+import { useTelegramConnect } from '../useTelegramConnect';
 
-const TOTAL = 3;
+const TOTAL = 4;
 
 export function OnboardingScreen({ onFinished }) {
   const { colors } = useTheme();
@@ -20,6 +21,8 @@ export function OnboardingScreen({ onFinished }) {
   const [hour, setHour] = useState(20);
   const [minute, setMinute] = useState(0);
   const [days, setDays] = useState(7);
+  const [notifyEmail, setNotifyEmail] = useState(true);
+  const { telegramChatId, connecting, connect, isConnected } = useTelegramConnect();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -33,9 +36,9 @@ export function OnboardingScreen({ onFinished }) {
         homeAddress: address,
         checkTime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
         daysAhead: days,
-        notifyEmail: true,
-        notifyTelegram: false,
-        telegramChatId: '',
+        notifyEmail,
+        notifyTelegram: isConnected, // on only if Telegram was actually linked
+        telegramChatId,
         paused: false,
         timezone: deviceTimeZone(),
       });
@@ -95,6 +98,46 @@ export function OnboardingScreen({ onFinished }) {
             <DaysSelector value={days} onChange={setDays} colors={colors} />
           </View>
         )}
+
+        {step === 3 && (
+          <View style={{ gap: 16 }}>
+            <Text style={[styles.q, { color: colors.text }]}>Where should we send it?</Text>
+
+            <View style={styles.row}>
+              <Text style={{ color: colors.text, fontSize: 16 }}>
+                Email {'\n'}
+                <Text style={{ color: colors.textMuted, fontSize: 13 }}>
+                  to your Google account
+                </Text>
+              </Text>
+              <Switch
+                value={notifyEmail}
+                onValueChange={setNotifyEmail}
+                trackColor={{ true: colors.brand }}
+              />
+            </View>
+
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: colors.text, fontSize: 16 }}>Telegram</Text>
+              {isConnected ? (
+                <Text style={{ color: colors.brand, fontWeight: '600' }}>✓ Connected</Text>
+              ) : (
+                <>
+                  <PrimaryButton
+                    title={connecting ? 'Waiting for Telegram…' : 'Connect Telegram'}
+                    onPress={connect}
+                    loading={connecting}
+                    colors={colors}
+                  />
+                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+                    Optional — opens Telegram, tap Start, then come back. You can also
+                    do this later in Settings.
+                  </Text>
+                </>
+              )}
+            </View>
+          </View>
+        )}
       </View>
 
       <View style={styles.nav}>
@@ -135,5 +178,6 @@ const styles = StyleSheet.create({
   body: { flex: 1, marginTop: 28 },
   q: { fontSize: 18, fontWeight: '600' },
   nav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   message: { marginTop: 12, fontSize: 14 },
 });

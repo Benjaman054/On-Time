@@ -83,6 +83,8 @@ exports.handler = async (event) => {
     })
   );
 
-  console.log(`Native sign-in for ${userId} (${email})`);
+  console.log(
+    `Native sign-in for ${userId} (${email}) — refresh_token received: ${!!tokens.refresh_token}`
+  );
   return response(200, { token: sessionToken });
 };

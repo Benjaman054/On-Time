@@ -12,6 +12,7 @@ const TOKEN_KEY = 'ontime.sessionToken';
 GoogleSignin.configure({
   webClientId: WEB_CLIENT_ID, // so we get an ID token + server auth code
   offlineAccess: true, // so the server can get a long-lived refresh token
+  forceCodeForRefreshToken: true, // always return a code the server can exchange
   scopes: ['https://www.googleapis.com/auth/calendar.events'],
 });
 
