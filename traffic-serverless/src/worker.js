@@ -66,6 +66,13 @@ exports.handler = async (event = {}) => {
 };
 
 async function processUser(user) {
+  console.log(
+    `[debug] ${user.userId} (${user.email}): refresh=${!!user.googleRefreshToken}, ` +
+      `home=${JSON.stringify(user.homeAddress)}, paused=${!!user.paused}, ` +
+      `signedOut=${!!user.signedOut}, daysAhead=${user.daysAhead}, ` +
+      `notifyEmail=${user.notifyEmail}, notifyTelegram=${user.notifyTelegram}, ` +
+      `telegramChatId=${user.telegramChatId}`
+  );
   if (!user.googleRefreshToken || !user.homeAddress) return;
   if (user.paused) {
     console.log(`Skipping ${user.userId} (paused)`);

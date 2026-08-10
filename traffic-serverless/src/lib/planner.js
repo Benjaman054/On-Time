@@ -13,6 +13,11 @@ const BUFFER_MINUTES = 10;
 async function buildPlansForUser(user) {
   const days = clampDays(user.daysAhead);
   const events = await readUpcomingEvents(user.googleRefreshToken, days);
+  const withLoc = events.filter((e) => e.location && e.start).length;
+  console.log(
+    `[debug] ${user.userId}: read ${events.length} events in next ${days}d, ` +
+      `${withLoc} have a location`
+  );
 
   const plans = [];
   for (const ev of events) {
