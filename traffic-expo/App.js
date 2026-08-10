@@ -11,7 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/theme-context';
 import { getColors } from './src/theme';
 import { getThemeIsDark, setThemeIsDark } from './src/storage';
-import { getToken, clearToken } from './src/auth';
+import { getToken, clearToken, nativeSignOut } from './src/auth';
 import { getPreferences, signOutOnServer } from './src/api';
 import { AuthProvider } from './src/auth-context';
 import { WelcomeScreen } from './src/screens/WelcomeScreen';
@@ -74,6 +74,7 @@ export default function App() {
     } catch {
       // Even if the server call fails, still sign out on the device.
     }
+    await nativeSignOut(); // clear the native Google session too
     await clearToken();
     setStage('welcome');
   }

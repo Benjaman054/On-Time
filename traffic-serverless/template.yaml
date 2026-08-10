@@ -197,6 +197,27 @@ Resources:
             Path: /auth/session
             Method: GET
 
+  # ---- Native Google Sign-In: verify + exchange, return a session token ----
+  AuthGoogleNativeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/authGoogleNative.handler
+      Timeout: 15
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /auth/google/native
+            Method: POST
+
   # ---- Telegram: app asks for a one-time connect deep link ----
   TelegramConnectFunction:
     Type: AWS::Serverless::Function

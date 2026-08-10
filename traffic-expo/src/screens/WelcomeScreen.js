@@ -50,7 +50,7 @@ export function WelcomeScreen({ onLoggedIn }) {
       />
       {busy && (
         <Text style={[styles.privacy, { color: colors.textMuted, marginTop: 12 }]}>
-          Approve in the browser, then come back — we'll sign you in automatically.
+          Choose your Google account to continue.
         </Text>
       )}
       {error && (

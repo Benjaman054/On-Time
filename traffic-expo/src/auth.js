@@ -1,12 +1,19 @@
-// The app's sign-in logic. It obtains a session token from the backend using the
-// "open browser + poll" flow, and stores it in the phone's SECURE storage
-// (Android Keystore / iOS Keychain) — not plain storage — so it's well protected.
-import * as WebBrowser from 'expo-web-browser';
-import * as Crypto from 'expo-crypto';
+// The app's sign-in logic, now using NATIVE Google Sign-In (the one-tap account
+// picker). Much simpler than the old browser+poll flow: the SDK gives us an ID
+// token + a one-time server auth code, we hand both to the backend, and get our
+// session token straight back. The token is stored in the phone's SECURE store.
 import * as SecureStore from 'expo-secure-store';
-import { BASE_URL } from './config';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { BASE_URL, WEB_CLIENT_ID } from './config';
 
 const TOKEN_KEY = 'ontime.sessionToken';
+
+// Configure the Google SDK once when this module loads.
+GoogleSignin.configure({
+  webClientId: WEB_CLIENT_ID, // so we get an ID token + server auth code
+  offlineAccess: true, // so the server can get a long-lived refresh token
+  scopes: ['https://www.googleapis.com/auth/calendar.events'],
+});
 
 // ---- token storage ----
 export async function getToken() {
@@ -19,54 +26,39 @@ export async function clearToken() {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
 
-/**
- * Runs the full sign-in:
- *   1. make a strong random login code (unguessable),
- *   2. open Google's consent page in the browser,
- *   3. poll the backend until our session token is ready,
- *   4. save the token securely.
- * Returns the token (also stored) or throws on timeout/expiry.
- */
+// Native sign-in: pick the account, then swap the Google tokens for our session
+// token at the backend. Returns the session token (also stored).
 export async function login() {
-  const code = Crypto.randomUUID(); // cryptographically-random, ~122 bits
+  await GoogleSignin.hasPlayServices();
+  const result = await GoogleSignin.signIn();
 
-  // Open the browser but DON'T await it — we poll in parallel so the app can
-  // advance on its own the moment the token is ready.
-  WebBrowser.openBrowserAsync(`${BASE_URL}/auth/google/start?login=${code}`);
+  // The library's response shape changed across versions; handle both.
+  const data = result?.data || result;
+  const idToken = data?.idToken;
+  const serverAuthCode = data?.serverAuthCode;
+  if (!idToken || !serverAuthCode) {
+    throw new Error('Google sign-in did not return the expected tokens.');
+  }
 
+  const res = await fetch(`${BASE_URL}/auth/google/native`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken, serverAuthCode }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.token) {
+    throw new Error(json.error || 'Sign-in failed on the server.');
+  }
+
+  await saveToken(json.token);
+  return json.token;
+}
+
+// Clears the native Google session too, so the next sign-in shows the picker.
+export async function nativeSignOut() {
   try {
-    const token = await pollForToken(code);
-    await saveToken(token);
-    return token;
-  } finally {
-    // Try to close the in-app browser. dismissBrowser() only exists on iOS
-    // (returns undefined on Android), so guard it and never let it throw.
-    try {
-      WebBrowser.dismissBrowser();
-    } catch {
-      // not all platforms can dismiss programmatically — that's fine
-    }
+    await GoogleSignin.signOut();
+  } catch {
+    // ignore — nothing to sign out of
   }
-}
-
-// Ask /auth/session repeatedly until it returns the token (or we give up).
-async function pollForToken(code, { attempts = 90, intervalMs = 2000 } = {}) {
-  const url = `${BASE_URL}/auth/session?login=${code}`;
-  for (let i = 0; i < attempts; i++) {
-    try {
-      const res = await fetch(url);
-      if (res.status === 410) throw new Error('Sign-in expired. Please try again.');
-      const data = await res.json();
-      if (data.status === 'ready' && data.token) return data.token;
-    } catch (e) {
-      if (String(e.message).includes('expired')) throw e;
-      // otherwise a transient network error — keep polling
-    }
-    await sleep(intervalMs);
-  }
-  throw new Error('Sign-in timed out. Please try again.');
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

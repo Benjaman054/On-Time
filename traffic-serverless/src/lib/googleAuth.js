@@ -13,6 +13,15 @@ function createOAuthClient() {
   );
 }
 
+// For exchanging a serverAuthCode from NATIVE Google Sign-In: no web redirect
+// URI (that code wasn't issued against our web callback).
+function createOAuthClientNoRedirect() {
+  return new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+  );
+}
+
 // What we ask the user to grant:
 //  - openid / email / profile: so Google tells us WHO the user is (their unique
 //    id, email, name) — this is how we identify the account. Non-sensitive.
@@ -24,4 +33,4 @@ const SCOPES = [
   "https://www.googleapis.com/auth/calendar.events",
 ];
 
-module.exports = { createOAuthClient, SCOPES };
+module.exports = { createOAuthClient, createOAuthClientNoRedirect, SCOPES };
