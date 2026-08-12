@@ -115,49 +115,6 @@ Resources:
             Path: /auth/google/start
             Method: GET
 
-  # ---- Test endpoint: read the calendar live (step 4a) ----
-  ReadCalendarFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/readCalendar.handler
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref UserTable
-          GOOGLE_CLIENT_ID: !Ref GoogleClientId
-          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
-          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref UserTable
-      Events:
-        Api:
-          Type: HttpApi
-          Properties:
-            Path: /debug/calendar
-            Method: GET
-
-  # ---- Test endpoint: calendar + traffic + leave-by (step 4b) ----
-  PlanTrafficFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/planTraffic.handler
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref UserTable
-          GOOGLE_CLIENT_ID: !Ref GoogleClientId
-          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
-          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
-          GOOGLE_MAPS_API_KEY: !Ref GoogleMapsApiKey
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref UserTable
-      Events:
-        Api:
-          Type: HttpApi
-          Properties:
-            Path: /debug/plan
-            Method: GET
-
   # ---- Google OAuth: receive the result, store the token ----
   AuthCallbackFunction:
     Type: AWS::Serverless::Function
