@@ -32,16 +32,31 @@ exports.handler = async (event) => {
     });
   }
 
+  // Read the current record first, so we can tell if the notification time is
+  // actually changing. If it is, we clear `lastEmailedDate` (the "already sent
+  // today" guard) so the new time can fire again TODAY instead of waiting for
+  // tomorrow. We only do this on a real time change — saving other settings
+  // (e.g. toggling Telegram) must NOT trigger a duplicate send.
+  const { Item: existing } = await ddb.send(
+    new GetCommand({ TableName: TABLE, Key: { userId } })
+  );
+  const timeChanged = existing?.checkTime !== checkTime;
+
   // NOTE: we do NOT set `email` here — it comes from the user's Google account
   // (saved at sign-in) so it's always correct and can't be spoofed per-user.
+  let updateExpression =
+    "SET homeAddress = :h, checkTime = :c, " +
+    "daysAhead = :d, notifyEmail = :ne, notifyTelegram = :nt, " +
+    "telegramChatId = :tc, paused = :p, #tz = :tz";
+  if (timeChanged) {
+    updateExpression += " REMOVE lastEmailedDate";
+  }
+
   await ddb.send(
     new UpdateCommand({
       TableName: TABLE,
       Key: { userId },
-      UpdateExpression:
-        "SET homeAddress = :h, checkTime = :c, " +
-        "daysAhead = :d, notifyEmail = :ne, notifyTelegram = :nt, " +
-        "telegramChatId = :tc, paused = :p, #tz = :tz",
+      UpdateExpression: updateExpression,
       ExpressionAttributeNames: { "#tz": "timezone" }, // "timezone" is reserved
       ExpressionAttributeValues: {
         ":h": homeAddress,
