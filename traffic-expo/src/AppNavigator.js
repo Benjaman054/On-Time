@@ -62,6 +62,9 @@ function MainDrawer() {
     <Drawer.Navigator
       drawerContent={(props) => <DrawerContent {...props} />}
       screenOptions={{
+        // Always open the drawer from the LEFT, even if the phone is set to a
+        // right-to-left language. Pairs with the forceLTR call in index.js.
+        drawerPosition: 'left',
         headerTitle: headerTitle(colors),
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
