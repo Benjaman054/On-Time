@@ -337,7 +337,7 @@ Resources:
             Path: /meetings
             Method: GET
 
-  # ---- The scheduled worker (step 5): runs every 15 min ----
+  # ---- The scheduled worker (step 5): runs every minute (clock-aligned) ----
   WorkerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -364,10 +364,13 @@ Resources:
               Resource: "*"
       Events:
         # This is what makes it run on its own — no HTTP, just the clock.
-        Every15Min:
+        # cron(* * * * ? *) fires every minute, aligned to the top of the minute,
+        # so a user's chosen time (e.g. 20:00) is caught right at 20:00 — not up
+        # to 15 minutes later like the old rate(15 minutes) did.
+        EveryMinute:
           Type: Schedule
           Properties:
-            Schedule: rate(15 minutes)
+            Schedule: cron(* * * * ? *)
 
 Outputs:
   ApiUrl:

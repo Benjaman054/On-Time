@@ -10,8 +10,9 @@ const { sendPlanTelegram } = require("./lib/telegram");
 
 const TIMEZONE = process.env.TIMEZONE || "Asia/Jerusalem";
 
-// Runs on a schedule (every 15 minutes). For each user, it sends the summary
-// once per day — at the first run at/after their chosen time.
+// Runs on a schedule (every minute, clock-aligned). For each user, it sends the
+// summary once per day — at the first run at/after their chosen time. Because it
+// runs every minute, "at/after their time" means right at their chosen minute.
 //
 // Manual test: invoke with { "userId": "benny" } to send immediately.
 exports.handler = async (event = {}) => {
@@ -44,9 +45,10 @@ exports.handler = async (event = {}) => {
     const target = parseHHmm(user.checkTime);
     if (target === null) continue;
 
-    // Due if we've reached the chosen time (within the last 30 min) AND we
-    // haven't already emailed today. The 30-min window comfortably covers the
-    // 15-min gaps between runs, so a time is never missed.
+    // Due if we've reached the chosen time AND we haven't already emailed today.
+    // Running every minute, this fires right at the chosen minute. The 30-min
+    // window is a safety net: if a minute-run is ever skipped/fails, the next
+    // run within 30 min still catches it (and lastEmailedDate stops duplicates).
     const due = nowMinutes >= target && nowMinutes - target < 30;
     if (!due || user.lastEmailedDate === today) continue;
 
