@@ -37,8 +37,10 @@ ON-Time reads your Google Calendar, checks live driving traffic, and tells you t
 - [What it does](#-what-it-does)
 - [Why I built it](#-why-i-built-it)
 - [How it works](#-how-it-works)
+- [Using the app](#-using-the-app)
 - [Architecture](#-architecture)
 - [How sign-in works](#-how-sign-in-works)
+- [Integrations & external services](#-integrations--external-services)
 - [API reference](#-api-reference)
 - [Tech stack](#-tech-stack)
 - [Repository structure](#-repository-structure)
@@ -83,6 +85,18 @@ Your home address  ─────────────┘            │
                          Shown in the app  +  daily email / Telegram
 ```
 
+## 🕹️ Using the app
+
+1. **Sign in with Google** — one tap; ON-Time connects to your calendar.
+2. **Onboarding (4 quick steps):**
+   - **Home address** — where you usually leave from.
+   - **Daily summary time** — when you want your plan each day.
+   - **Days ahead** — how far to look for meetings (1–7 days).
+   - **Notifications** — turn on email and/or connect Telegram.
+3. **Meetings screen** — your upcoming meetings, each with a **"leave by"** time; pull to refresh, and tap **＋** to add one.
+4. **Add meeting** — enter a title, location, date and time; it's saved straight to your Google Calendar.
+5. **Settings** — change your home address, summary time, days-ahead, toggle email/Telegram, or sign out (which stops all notifications).
+
 ## 🏗️ Architecture
 
 ```mermaid
@@ -107,6 +121,20 @@ ON-Time never trusts a user id from the URL — identity always comes from a ser
 2. It calls `POST /auth/google/native`. The backend **verifies the ID token** (the user id is the Google `sub`), **exchanges the auth code** for a long-lived refresh token (stored only on the server), and returns an **opaque session token**.
 3. The app stores that token in `expo-secure-store` and sends it as `Authorization: Bearer <token>` on **every** request.
 4. The backend looks up `session#<token>` → user id. Google refresh tokens never leave the backend.
+
+## 🔌 Integrations & external services
+
+ON-Time ties several services together — here's what each one does:
+
+| Service | What it's used for |
+|---------|--------------------|
+| **Google OAuth** | Sign-in + permission to access the user's calendar (narrow `calendar.events` scope, not full access). |
+| **Google Calendar API** | Read upcoming events (title, time, location) and create the events a user adds in-app. |
+| **Google Routes API** | Traffic-aware drive-time prediction for each meeting. |
+| **Google Places API** | Address autocomplete when entering a home or meeting location. |
+| **Amazon SES** | Sends the daily summary email, DKIM-signed from the app's own domain so it lands in the inbox. |
+| **Telegram Bot API** | Sends the daily summary to Telegram; users connect via a one-time deep link + webhook. |
+| **AWS Lambda · API Gateway · DynamoDB · EventBridge** | The serverless backend, per-user storage, and the every-minute scheduler. |
 
 ## 📡 API reference
 
