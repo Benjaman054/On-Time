@@ -22,19 +22,17 @@ ON-Time reads your Google Calendar, checks live driving traffic, and tells you t
 
 ## 📸 Screenshots
 
-| Welcome | Meetings | Add meeting | Settings |
-|---|---|---|---|
-| <img src="docs/screenshots/welcome.svg" width="200"/> | <img src="docs/screenshots/meetings.svg" width="200"/> | <img src="docs/screenshots/add-meeting.svg" width="200"/> | <img src="docs/screenshots/settings.svg" width="200"/> |
+*Welcome · Meetings · Add meeting · Settings*
 
-**Onboarding (4 steps)**
+<img src="docs/screenshots/screens.png" width="900"/>
 
-| Home address | Daily time | Days ahead | Notifications |
-|---|---|---|---|
-| <img src="docs/screenshots/onboarding-1.svg" width="200"/> | <img src="docs/screenshots/onboarding-2.svg" width="200"/> | <img src="docs/screenshots/onboarding-3.svg" width="200"/> | <img src="docs/screenshots/onboarding-4.svg" width="200"/> |
+**Onboarding (4 steps)** — *home address · daily time · days ahead · notifications*
+
+<img src="docs/screenshots/onboarding.png" width="900"/>
 
 **Daily summary email**
 
-<img src="docs/screenshots/email.svg" width="480"/>
+<img src="docs/screenshots/email.png" width="480"/>
 
 ---
 
