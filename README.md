@@ -26,6 +26,12 @@ ON-Time reads your Google Calendar, checks live driving traffic, and tells you t
 |---|---|---|---|
 | <img src="docs/screenshots/welcome.svg" width="200"/> | <img src="docs/screenshots/meetings.svg" width="200"/> | <img src="docs/screenshots/add-meeting.svg" width="200"/> | <img src="docs/screenshots/settings.svg" width="200"/> |
 
+**Onboarding (4 steps)**
+
+| Home address | Daily time | Days ahead | Notifications |
+|---|---|---|---|
+| <img src="docs/screenshots/onboarding-1.svg" width="200"/> | <img src="docs/screenshots/onboarding-2.svg" width="200"/> | <img src="docs/screenshots/onboarding-3.svg" width="200"/> | <img src="docs/screenshots/onboarding-4.svg" width="200"/> |
+
 **Daily summary email**
 
 <img src="docs/screenshots/email.svg" width="480"/>
@@ -235,8 +241,6 @@ Every push to `main` triggers [`.github/workflows/ci.yml`](.github/workflows/ci.
 - [x] Custom domain + DKIM email deliverability
 - [x] Notifications delivered exactly on time
 - [ ] Google OAuth verification (in review)
-- [ ] Google Play Store release
-- [ ] iOS build (Apple Developer Program + TestFlight)
 
 ## 📝 License
 
