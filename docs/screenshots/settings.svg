@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="620" viewBox="0 0 300 620" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <clipPath id="scrS"><rect x="12" y="12" width="276" height="596" rx="30"/></clipPath>
+  </defs>
+  <rect x="6" y="6" width="288" height="608" rx="36" fill="#111827"/>
+  <rect x="12" y="12" width="276" height="596" rx="30" fill="#F3F4F6"/>
+  <g clip-path="url(#scrS)">
+    <rect x="12" y="12" width="276" height="70" fill="#FFFFFF"/>
+    <text x="30" y="42" font-size="13" font-weight="600" fill="#111827">9:41</text>
+    <text x="248" y="42" font-size="12" fill="#111827">▤ ▮</text>
+    <text x="30" y="72" font-size="18" font-weight="700" fill="#111827">☰   Settings</text>
+
+    <!-- Home address -->
+    <text x="28" y="112" font-size="12" fill="#6B7280">Home address</text>
+    <rect x="28" y="120" width="244" height="46" rx="12" fill="#FFFFFF" stroke="#E5E7EB"/>
+    <text x="44" y="148" font-size="14" fill="#111827">📍 Herzl St 10, Netanya</text>
+
+    <!-- Daily time -->
+    <text x="28" y="190" font-size="12" fill="#6B7280">Daily summary time</text>
+    <rect x="28" y="198" width="140" height="46" rx="12" fill="#FFFFFF" stroke="#E5E7EB"/>
+    <text x="44" y="226" font-size="14" fill="#111827">⏰  8:00 pm</text>
+
+    <!-- Days ahead -->
+    <text x="28" y="268" font-size="12" fill="#6B7280">Days ahead: 3</text>
+    <rect x="28" y="278" width="244" height="6" rx="3" fill="#E5E7EB"/>
+    <rect x="28" y="278" width="90" height="6" rx="3" fill="#2563EB"/>
+    <circle cx="118" cy="281" r="9" fill="#2563EB"/>
+
+    <!-- Notifications -->
+    <text x="28" y="326" font-size="13" font-weight="700" fill="#111827">Notifications</text>
+
+    <text x="28" y="360" font-size="14" fill="#374151">Email</text>
+    <rect x="228" y="348" width="44" height="24" rx="12" fill="#2563EB"/>
+    <circle cx="260" cy="360" r="9" fill="#FFFFFF"/>
+
+    <text x="28" y="398" font-size="14" fill="#374151">Telegram</text>
+    <rect x="228" y="386" width="44" height="24" rx="12" fill="#2563EB"/>
+    <circle cx="260" cy="398" r="9" fill="#FFFFFF"/>
+
+    <!-- Sign out -->
+    <rect x="28" y="452" width="244" height="48" rx="12" fill="#FFFFFF" stroke="#E5E7EB"/>
+    <text x="150" y="481" text-anchor="middle" font-size="14" font-weight="600" fill="#DC2626">Sign out</text>
+  </g>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="440" viewBox="0 0 560 440" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="560" height="440" fill="#F3F4F6"/>
+  <g transform="translate(40,24)">
+    <rect x="0" y="0" width="480" height="392" rx="18" fill="#FFFFFF"/>
+    <!-- header -->
+    <path d="M0 18 a18 18 0 0 1 18 -18 h444 a18 18 0 0 1 18 18 v72 h-480 z" fill="#2563EB"/>
+    <text x="26" y="42" font-size="24" font-weight="800" fill="#FFFFFF">ON-Time</text>
+    <text x="26" y="70" font-size="14" fill="#DBEAFE">Your plan for the days ahead</text>
+
+    <!-- card -->
+    <g transform="translate(24,112)">
+      <rect x="0" y="0" width="432" height="176" rx="14" fill="#FFFFFF" stroke="#E5E7EB"/>
+      <text x="22" y="36" font-size="20" font-weight="700" fill="#111827">Team meeting</text>
+      <text x="22" y="60" font-size="14" fill="#6B7280">Rothschild Blvd, Tel Aviv, Israel</text>
+      <text x="22" y="92" font-size="14" fill="#374151">Meeting: <tspan font-weight="700">Fri, 14 Aug · 8:00 am</tspan></text>
+      <text x="22" y="120" font-size="18" font-weight="700" fill="#2563EB">Leave by Fri, 14 Aug · 6:39 am</text>
+      <text x="22" y="140" font-size="13" fill="#6B7280">Drive 71–73 min</text>
+      <rect x="22" y="150" width="150" height="34" rx="9" fill="#2563EB"/>
+      <text x="97" y="172" text-anchor="middle" font-size="13" font-weight="600" fill="#FFFFFF">Open route in Maps</text>
+    </g>
+
+    <text x="24" y="322" font-size="11" fill="#9CA3AF">Drive times show best-case–with-traffic. Tip: in Maps, set the departure</text>
+    <text x="24" y="338" font-size="11" fill="#9CA3AF">time to your leave-by time for exact traffic.</text>
+  </g>
+</svg>
