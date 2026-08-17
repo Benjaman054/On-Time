@@ -40,6 +40,14 @@ Benjamin_accessKeys.csv
 # =====================================================================
 traffic-android/
 traffic-backend/
+# The public website (privacy policy + homepage) lives in its OWN public repo
+ontime-site/
+
+# =====================================================================
+# Internal working docs — kept on disk, NOT published in the public repo
+# =====================================================================
+HANDOFF.md
+NOTES.md
 
 # =====================================================================
 # IDE / editor / OS
