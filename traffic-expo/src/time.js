@@ -48,7 +48,10 @@ export function localWallClockEpoch(dateObj, h, m) {
 
 // Short "HH:mm" label for buttons.
 export function hhmm(h, m) {
-  return `${pad(h)}:${pad(m)}`;
+  // 12-hour am/pm to match how the app + email show times (e.g. "7:06 pm").
+  const period = h < 12 ? 'am' : 'pm';
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${pad(m)} ${period}`;
 }
 
 // The phone's IANA timezone name (e.g. "Asia/Jerusalem", "America/New_York").

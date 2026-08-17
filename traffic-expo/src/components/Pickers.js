@@ -28,8 +28,10 @@ export function TimeField({ hour, minute, onChange, colors, label }) {
         <DateTimePicker
           value={value}
           mode="time"
-          is24Hour
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          // 12-hour am/pm, to match how the app + email show times everywhere.
+          is24Hour={false}
+          // Rolling-wheel spinner on BOTH platforms (was the clock dial on Android).
+          display="spinner"
           onChange={(event, selected) => {
             setShow(false);
             if (event.type === 'set' && selected) {
