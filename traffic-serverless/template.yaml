@@ -28,6 +28,13 @@ Parameters:
     NoEcho: true
     Default: ""
     Description: Bot token from Telegram's @BotFather (for Telegram notifications)
+  TelegramWebhookSecret:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: >-
+      Shared secret proving a /telegram/webhook request really came from
+      Telegram. Must match the secret_token given to Telegram in setWebhook.
 
 Globals:
   Function:
@@ -147,6 +154,7 @@ Resources:
         Variables:
           TABLE_NAME: !Ref UserTable
           TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+          TELEGRAM_WEBHOOK_SECRET: !Ref TelegramWebhookSecret
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref UserTable

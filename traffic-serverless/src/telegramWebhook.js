@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const {
   GetCommand,
   DeleteCommand,
@@ -10,6 +11,24 @@ const { ddb, TABLE, response } = require("./lib/dynamo");
 // We look up which account that code belongs to, link this chat to it, and
 // confirm in the chat. Any other message is ignored.
 exports.handler = async (event) => {
+  // --- Verify the caller really is Telegram ---
+  // When we registered this webhook we gave Telegram a secret. Telegram sends
+  // it back in this header on EVERY call. If it doesn't match, the request is
+  // forged (anyone can POST to this public URL) so we refuse it. The secret is
+  // only enforced once TELEGRAM_WEBHOOK_SECRET is set, so setting it up can't
+  // lock us out before the webhook is re-registered.
+  const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (expectedSecret) {
+    const headers = event.headers || {};
+    const gotSecret =
+      headers["x-telegram-bot-api-secret-token"] ||
+      headers["X-Telegram-Bot-Api-Secret-Token"] ||
+      "";
+    if (!secretsMatch(gotSecret, expectedSecret)) {
+      return response(401, { error: "unauthorized" });
+    }
+  }
+
   let update;
   try {
     update = JSON.parse(event.body || "{}");
@@ -63,4 +82,12 @@ async function tgSend(token, chatId, text) {
   } catch {
     // best-effort confirmation — ignore failures
   }
+}
+
+// Compare two secrets without leaking their length/contents via timing.
+function secretsMatch(a, b) {
+  const ab = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
 }

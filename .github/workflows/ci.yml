@@ -115,6 +115,7 @@ jobs:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
         run: |
           sam deploy \
             --stack-name traffic-check \
@@ -129,4 +130,5 @@ jobs:
               GoogleRedirectUri="https://hy76b43p4m.execute-api.eu-central-1.amazonaws.com/auth/google/callback" \
               GoogleMapsApiKey="$GOOGLE_MAPS_API_KEY" \
               SenderEmail="$SENDER_EMAIL" \
-              TelegramBotToken="$TELEGRAM_BOT_TOKEN"
+              TelegramBotToken="$TELEGRAM_BOT_TOKEN" \
+              TelegramWebhookSecret="$TELEGRAM_WEBHOOK_SECRET"
