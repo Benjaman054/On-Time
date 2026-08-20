@@ -98,62 +98,6 @@ Resources:
             Path: /preferences
             Method: GET
 
-  # ---- Google OAuth: start the consent flow ----
-  AuthStartFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/authStart.handler
-      Environment:
-        Variables:
-          GOOGLE_CLIENT_ID: !Ref GoogleClientId
-          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
-          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
-      Events:
-        Api:
-          Type: HttpApi
-          Properties:
-            Path: /auth/google/start
-            Method: GET
-
-  # ---- Google OAuth: receive the result, store the token ----
-  AuthCallbackFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/authCallback.handler
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref UserTable
-          GOOGLE_CLIENT_ID: !Ref GoogleClientId
-          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
-          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref UserTable
-      Events:
-        Api:
-          Type: HttpApi
-          Properties:
-            Path: /auth/google/callback
-            Method: GET
-
-  # ---- Poll endpoint: the app collects its session token here ----
-  AuthSessionFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/authSession.handler
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref UserTable
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref UserTable
-      Events:
-        Api:
-          Type: HttpApi
-          Properties:
-            Path: /auth/session
-            Method: GET
-
   # ---- Native Google Sign-In: verify + exchange, return a session token ----
   AuthGoogleNativeFunction:
     Type: AWS::Serverless::Function
