@@ -4,16 +4,13 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import {
-  createDrawerNavigator,
-  DrawerContentScrollView,
-  DrawerItemList,
-} from '@react-navigation/drawer';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MeetingsScreen } from './screens/MeetingsScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { AddMeetingScreen } from './screens/AddMeetingScreen';
-import { LogoBadge, Wordmark } from './components/Logo';
+import { DrawerContent } from './components/DrawerContent';
+import { headerTitle } from './components/headerTitle';
 import { useTheme } from './theme-context';
 
 const Drawer = createDrawerNavigator();
@@ -34,25 +31,6 @@ function HomeWithFab({ navigation }) {
         <Text style={styles.fabPlus}>＋</Text>
       </TouchableOpacity>
     </View>
-  );
-}
-
-function headerTitle(colors) {
-  return () => <Wordmark color={colors.text} fontSize={22} />;
-}
-
-// The slide-out menu, with the ON-Time logo pinned above the menu items.
-function DrawerContent(props) {
-  const { colors } = useTheme();
-  return (
-    <DrawerContentScrollView {...props}>
-      <View style={[styles.drawerHeader, { borderBottomColor: colors.border }]}>
-        <LogoBadge size={56} />
-        <View style={{ height: 10 }} />
-        <Wordmark color={colors.text} fontSize={26} />
-      </View>
-      <DrawerItemList {...props} />
-    </DrawerContentScrollView>
   );
 }
 
@@ -114,13 +92,6 @@ export function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  drawerHeader: {
-    alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 20,
-    marginBottom: 8,
-    borderBottomWidth: 1,
-  },
   fab: {
     position: 'absolute',
     right: 20,
