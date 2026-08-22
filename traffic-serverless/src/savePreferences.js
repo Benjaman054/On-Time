@@ -1,5 +1,6 @@
-const { GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
+const { UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { ddb, TABLE, response } = require("./lib/dynamo");
+const { getUser, savePlans } = require("./lib/users");
 const { buildPlansForUser } = require("./lib/planner");
 const { clampDays } = require("./lib/util");
 const { getUserIdFromRequest } = require("./lib/auth");
@@ -37,9 +38,7 @@ exports.handler = async (event) => {
   // today" guard) so the new time can fire again TODAY instead of waiting for
   // tomorrow. We only do this on a real time change — saving other settings
   // (e.g. toggling Telegram) must NOT trigger a duplicate send.
-  const { Item: existing } = await ddb.send(
-    new GetCommand({ TableName: TABLE, Key: { userId } })
-  );
+  const existing = await getUser(userId);
   const timeChanged = existing?.checkTime !== checkTime;
 
   // NOTE: we do NOT set `email` here — it comes from the user's Google account
@@ -75,22 +74,10 @@ exports.handler = async (event) => {
   // must NOT fail the save — the preferences are already stored.
   let plansCount = null;
   try {
-    const { Item } = await ddb.send(
-      new GetCommand({ TableName: TABLE, Key: { userId } })
-    );
+    const Item = await getUser(userId);
     if (Item?.googleRefreshToken && Item.homeAddress && !Item.paused) {
       const plans = await buildPlansForUser(Item);
-      await ddb.send(
-        new UpdateCommand({
-          TableName: TABLE,
-          Key: { userId },
-          UpdateExpression: "SET plans = :p, plansUpdatedAt = :t",
-          ExpressionAttributeValues: {
-            ":p": plans,
-            ":t": new Date().toISOString(),
-          },
-        })
-      );
+      await savePlans(userId, plans);
       plansCount = plans.length;
     }
   } catch (e) {

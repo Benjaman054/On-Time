@@ -1,5 +1,5 @@
-const { GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
-const { ddb, TABLE, response } = require("./lib/dynamo");
+const { response } = require("./lib/dynamo");
+const { getUser, savePlans } = require("./lib/users");
 const { createEvent } = require("./lib/calendar");
 const { buildPlansForUser } = require("./lib/planner");
 const { getUserIdFromRequest } = require("./lib/auth");
@@ -24,9 +24,7 @@ exports.handler = async (event) => {
     return response(400, { error: "That time has already passed" });
   }
 
-  const { Item: user } = await ddb.send(
-    new GetCommand({ TableName: TABLE, Key: { userId } })
-  );
+  const user = await getUser(userId);
   if (!user?.googleRefreshToken) {
     return response(400, { error: "Google Calendar not connected" });
   }
@@ -46,17 +44,7 @@ exports.handler = async (event) => {
   try {
     if (user.homeAddress && !user.paused) {
       const plans = await buildPlansForUser(user);
-      await ddb.send(
-        new UpdateCommand({
-          TableName: TABLE,
-          Key: { userId },
-          UpdateExpression: "SET plans = :p, plansUpdatedAt = :t",
-          ExpressionAttributeValues: {
-            ":p": plans,
-            ":t": new Date().toISOString(),
-          },
-        })
-      );
+      await savePlans(userId, plans);
     }
   } catch (e) {
     console.error("Recompute after create failed:", e.message);

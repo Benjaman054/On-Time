@@ -1,5 +1,5 @@
-const { GetCommand } = require("@aws-sdk/lib-dynamodb");
-const { ddb, TABLE, response } = require("./lib/dynamo");
+const { response } = require("./lib/dynamo");
+const { getUser } = require("./lib/users");
 const { getUserIdFromRequest } = require("./lib/auth");
 
 // GET /preferences   (identity comes from the session token)
@@ -11,10 +11,7 @@ exports.handler = async (event) => {
     return response(401, { error: "Not signed in" });
   }
 
-  const result = await ddb.send(
-    new GetCommand({ TableName: TABLE, Key: { userId } })
-  );
-  const user = result.Item;
+  const user = await getUser(userId);
   if (!user) {
     return response(404, { error: "No preferences found for this user" });
   }

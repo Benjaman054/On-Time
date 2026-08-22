@@ -1,5 +1,6 @@
-const { GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
+const { UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { ddb, TABLE, response } = require("./lib/dynamo");
+const { getUser } = require("./lib/users");
 const { buildPlansForUser, } = require("./lib/planner");
 const { hasCalendarChangedSince } = require("./lib/calendar");
 const { getUserIdFromRequest } = require("./lib/auth");
@@ -18,9 +19,7 @@ exports.handler = async (event) => {
   const refresh = qs.refresh === "true";
   const sync = qs.sync === "true";
 
-  const { Item: user } = await ddb.send(
-    new GetCommand({ TableName: TABLE, Key: { userId } })
-  );
+  const user = await getUser(userId);
   if (!user) return response(200, { count: 0, plans: [], updatedAt: null });
 
   const canCompute = user.googleRefreshToken && user.homeAddress && !user.paused;

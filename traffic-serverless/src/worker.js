@@ -1,9 +1,6 @@
-const {
-  ScanCommand,
-  GetCommand,
-  UpdateCommand,
-} = require("@aws-sdk/lib-dynamodb");
+const { ScanCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { ddb, TABLE } = require("./lib/dynamo");
+const { getUser, savePlans } = require("./lib/users");
 const { buildPlansForUser } = require("./lib/planner");
 const { sendPlanEmail } = require("./lib/email");
 const { sendPlanTelegram } = require("./lib/telegram");
@@ -17,9 +14,7 @@ const TIMEZONE = process.env.TIMEZONE || "Asia/Jerusalem";
 // Manual test: invoke with { "userId": "benny" } to send immediately.
 exports.handler = async (event = {}) => {
   if (event.userId) {
-    const { Item } = await ddb.send(
-      new GetCommand({ TableName: TABLE, Key: { userId: event.userId } })
-    );
+    const Item = await getUser(event.userId);
     if (Item) await processUser(Item);
     return { mode: "manual", userId: event.userId };
   }
@@ -87,17 +82,7 @@ async function processUser(user) {
 
   const plans = await buildPlansForUser(user);
 
-  await ddb.send(
-    new UpdateCommand({
-      TableName: TABLE,
-      Key: { userId: user.userId },
-      UpdateExpression: "SET plans = :p, plansUpdatedAt = :t",
-      ExpressionAttributeValues: {
-        ":p": plans,
-        ":t": new Date().toISOString(),
-      },
-    })
-  );
+  await savePlans(user.userId, plans);
   console.log(`Saved ${plans.length} plans for ${user.userId}`);
 
   const tz = user.timezone || TIMEZONE;
