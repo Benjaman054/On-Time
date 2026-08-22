@@ -7,6 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AddressAutocomplete } from '../components/AddressAutocomplete';
 import { TimeField, DaysSelector } from '../components/Pickers';
 import { PrimaryButton } from '../components/Button';
+import { Section } from '../components/Section';
+import { ToggleRow } from '../components/ToggleRow';
+import { ThemeChip } from '../components/ThemeChip';
 import { useTheme } from '../theme-context';
 import { useAuth } from '../auth-context';
 import { getPreferences, savePreferences, connectTelegram } from '../api';
@@ -238,47 +241,6 @@ export function SettingsScreen() {
   );
 }
 
-function Section({ title, colors, children }) {
-  return (
-    <View style={{ gap: 10 }}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
-function ToggleRow({ label, value, onChange, colors }) {
-  return (
-    <TouchableOpacity
-      style={styles.rowBetween}
-      activeOpacity={0.7}
-      onPress={() => onChange(!value)}
-    >
-      <Text style={{ color: colors.text, fontSize: 16 }}>{label}</Text>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.brand }} />
-    </TouchableOpacity>
-  );
-}
-
-function ThemeChip({ label, selected, onPress, colors }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={[
-        styles.themeChip,
-        {
-          borderColor: selected ? colors.brand : colors.border,
-          backgroundColor: selected ? colors.brand : 'transparent',
-        },
-      ]}
-    >
-      <Text style={{ color: selected ? colors.onBrand : colors.text, fontWeight: '600' }}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 26 },
   sectionTitle: { fontSize: 17, fontWeight: '600' },
@@ -295,12 +257,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   themeRow: { flexDirection: 'row', gap: 12 },
-  themeChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
   signOut: {
     marginTop: 8,
     alignItems: 'center',

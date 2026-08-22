@@ -7,16 +7,14 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
-  TouchableOpacity,
-  Linking,
   RefreshControl,
   StyleSheet,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getMeetings } from '../api';
-import { formatTime } from '../time';
 import { PrimaryButton } from '../components/Button';
+import { PlanCard } from '../components/PlanCard';
 import { useTheme } from '../theme-context';
 
 export function MeetingsScreen() {
@@ -74,14 +72,6 @@ export function MeetingsScreen() {
     setRefreshing(false);
   }
 
-  function openMaps(location) {
-    const url =
-      'https://www.google.com/maps/dir/?api=1&destination=' +
-      encodeURIComponent(location) +
-      '&travelmode=driving';
-    Linking.openURL(url);
-  }
-
   if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
@@ -124,59 +114,13 @@ export function MeetingsScreen() {
       }
     >
       {plans.map((plan, i) => (
-        <PlanCard key={i} plan={plan} colors={colors} onOpenMaps={openMaps} />
+        <PlanCard key={i} plan={plan} colors={colors} />
       ))}
     </ScrollView>
-  );
-}
-
-function PlanCard({ plan, colors, onOpenMaps }) {
-  const drive = plan.driveMinutes;
-  const hasRange = drive && drive.withoutTraffic != null && drive.withTraffic != null;
-
-  return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[styles.cardTitle, { color: colors.text }]}>
-        {plan.title || '(no title)'}
-      </Text>
-      <Text style={[styles.cardLine, { color: colors.text }]}>📍 {plan.location || ''}</Text>
-
-      {plan.error ? (
-        <Text style={[styles.cardLine, { color: colors.textMuted }]}>⚠️ {plan.error}</Text>
-      ) : (
-        <>
-          <Text style={[styles.cardLine, { color: colors.textMuted }]}>
-            Meeting: {formatTime(plan.meetingTime)}
-          </Text>
-          <Text style={[styles.cardLine, { color: colors.textMuted }]}>
-            Leave by {formatTime(plan.leaveBy)}
-            {hasRange ? `   •   ${drive.withoutTraffic}–${drive.withTraffic} min drive` : ''}
-          </Text>
-          {plan.location ? (
-            <TouchableOpacity
-              onPress={() => onOpenMaps(plan.location)}
-              style={[styles.mapsBtn, { backgroundColor: colors.brand }]}
-            >
-              <Text style={{ color: colors.onBrand, fontWeight: '600' }}>Open in Maps</Text>
-            </TouchableOpacity>
-          ) : null}
-        </>
-      )}
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
   center: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   list: { padding: 16, gap: 12 },
-  card: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 6 },
-  cardTitle: { fontSize: 17, fontWeight: '700' },
-  cardLine: { fontSize: 14 },
-  mapsBtn: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
 });

@@ -9,7 +9,7 @@ import { TimeField, DateField } from '../components/Pickers';
 import { PrimaryButton, OutlineButton } from '../components/Button';
 import { useTheme } from '../theme-context';
 import { createMeeting } from '../api';
-import { toLocalIso, localWallClockEpoch } from '../time';
+import { toLocalIso, localWallClockEpoch, isEndAfterStart } from '../time';
 
 export function AddMeetingScreen({ navigation }) {
   const { colors } = useTheme();
@@ -23,16 +23,12 @@ export function AddMeetingScreen({ navigation }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  function endIsAfterStart() {
-    return end.h * 60 + end.m > start.h * 60 + start.m;
-  }
-
   async function submit() {
     if (title.trim().length === 0) {
       setError('Please add a title.');
       return;
     }
-    if (!endIsAfterStart()) {
+    if (!isEndAfterStart(start, end)) {
       setError('End time must be after start time.');
       return;
     }

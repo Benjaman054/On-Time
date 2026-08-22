@@ -54,6 +54,12 @@ export function hhmm(h, m) {
   return `${hour12}:${pad(m)} ${period}`;
 }
 
+// True if the end time is later than the start time. Both are { h, m } objects.
+// Compares by total minutes since midnight, so 10:00 > 9:30 etc.
+export function isEndAfterStart(start, end) {
+  return end.h * 60 + end.m > start.h * 60 + start.m;
+}
+
 // The phone's IANA timezone name (e.g. "Asia/Jerusalem", "America/New_York").
 // Sent to the backend so the daily worker uses each user's own zone.
 export function deviceTimeZone() {
