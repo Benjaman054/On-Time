@@ -238,7 +238,7 @@ Every push to `main` triggers [`.github/workflows/ci.yml`](.github/workflows/ci.
 - [x] Traffic-aware leave-by times + daily email/Telegram
 - [x] Custom domain + DKIM email deliverability
 - [x] Notifications delivered exactly on time
-- [ ] Google OAuth verification (in review)
+- [x] Google OAuth verification
 
 ## 📝 License
 
